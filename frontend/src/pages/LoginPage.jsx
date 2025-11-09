@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Droplets, Mail, Lock } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -57,7 +57,28 @@ const LoginPage = () => {
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-cyan-100">
             <div className="text-center mb-8">
               <div className="flex items-center justify-center space-x-2 mb-4">
-                <Droplets className="w-10 h-10 text-cyan-600" />
+                <svg
+                  className="w-10 h-10"
+                  width="144"
+                  height="194"
+                  viewBox="0 0 144 194"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <rect fill="white" height="194" width="144" x="0" y="0" />
+                  <path
+                    d="M 40 8 L 57 99 L 49 9 L 74 47 L 77 121 L 116 153 L 87 108 L 84 37 L 50 6 L 127 9 L 136 164 L 122 148 L 116 187 L 95 162 L 44 158 L 16 109 Z"
+                    fill="rgb(56,120,156)"
+                    stroke="none"
+                    strokeWidth="1"
+                  />
+                  <path
+                    d="M 46 84 L 47 109 L 59 133 L 76 148 L 111 162 L 82 144 L 66 128 L 55 111 Z"
+                    fill="rgb(233,240,242)"
+                    stroke="none"
+                    strokeWidth="1"
+                  />
+                </svg>
                 <span className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">
                   Recursos Hidricos de SDE
                 </span>
