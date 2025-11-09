@@ -1,41 +1,47 @@
-import React, { useState } from 'react';
-import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/components/ui/use-toast';
-import { Droplets, Mail, Lock, User, Briefcase } from 'lucide-react';
+import React, { useState } from "react";
+import { Helmet } from "react-helmet";
+import { motion } from "framer-motion";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { Droplets, Mail, Lock, User, Briefcase } from "lucide-react";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'tecnico'
+    name: "",
+    email: "",
+    password: "",
+    role: "tecnico",
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const result = register(formData);
-    
+
     if (result.success) {
       toast({
-        title: '¡Cuenta creada!',
-        description: 'Tu cuenta ha sido creada exitosamente',
+        title: "¡Cuenta creada!",
+        description: "Tu cuenta ha sido creada exitosamente",
       });
-      navigate('/dashboard');
+      navigate("/dashboard");
     } else {
       toast({
-        title: 'Error',
+        title: "Error",
         description: result.error,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
@@ -43,8 +49,11 @@ const RegisterPage = () => {
   return (
     <>
       <Helmet>
-        <title>Registrarse - HydroManager</title>
-        <meta name="description" content="Crea tu cuenta en HydroManager y comienza a gestionar tus plantas hídricas" />
+        <title>Registrarse - Recursos Hidricos de SDE</title>
+        <meta
+          name="description"
+          content="Crea tu cuenta en Recursos Hidricos de SDE y comienza a gestionar tus plantas hídricas"
+        />
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50 flex items-center justify-center p-4">
@@ -59,11 +68,13 @@ const RegisterPage = () => {
               <div className="flex items-center justify-center space-x-2 mb-4">
                 <Droplets className="w-10 h-10 text-cyan-600" />
                 <span className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">
-                  HydroManager
+                  Recursos Hidricos de SDE
                 </span>
               </div>
               <h1 className="text-2xl font-bold text-gray-900">Crear Cuenta</h1>
-              <p className="text-gray-600 mt-2">Únete a HydroManager</p>
+              <p className="text-gray-600 mt-2">
+                Únete a Recursos Hidricos de SDE
+              </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -76,7 +87,9 @@ const RegisterPage = () => {
                     type="text"
                     placeholder="Juan Pérez"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     className="pl-10"
                     required
                   />
@@ -92,7 +105,9 @@ const RegisterPage = () => {
                     type="email"
                     placeholder="tu@email.com"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     className="pl-10"
                     required
                   />
@@ -108,7 +123,9 @@ const RegisterPage = () => {
                     type="password"
                     placeholder="••••••••"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                     className="pl-10"
                     required
                   />
@@ -117,7 +134,12 @@ const RegisterPage = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="role">Rol</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, role: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -128,8 +150,8 @@ const RegisterPage = () => {
                 </Select>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700"
               >
                 Crear Cuenta
@@ -138,15 +160,21 @@ const RegisterPage = () => {
 
             <div className="mt-6 text-center">
               <p className="text-gray-600">
-                ¿Ya tienes cuenta?{' '}
-                <Link to="/login" className="text-cyan-600 hover:text-cyan-700 font-semibold">
+                ¿Ya tienes cuenta?{" "}
+                <Link
+                  to="/login"
+                  className="text-cyan-600 hover:text-cyan-700 font-semibold"
+                >
                   Inicia sesión
                 </Link>
               </p>
             </div>
 
             <div className="mt-4 text-center">
-              <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
+              <Link
+                to="/"
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
                 ← Volver al inicio
               </Link>
             </div>

@@ -47,7 +47,7 @@ const DashboardLayout = ({ children }) => {
               <div className="flex items-center space-x-2 ml-2 lg:ml-0">
                 <Droplets className="w-8 h-8 text-cyan-600" />
                 <span className="text-xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">
-                  HydroManager
+                  Recursos Hidricos de SDE
                 </span>
               </div>
             </div>

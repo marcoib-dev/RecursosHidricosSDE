@@ -1,14 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
-import { useParams, useNavigate } from 'react-router-dom';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import PlantMap from '@/components/plants/PlantMap';
-import FileUpload from '@/components/plants/FileUpload';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, MapPin, User, Calendar, FileText, Edit, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Helmet } from "react-helmet";
+import { motion } from "framer-motion";
+import { useParams, useNavigate } from "react-router-dom";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import PlantMap from "@/components/plants/PlantMap";
+import FileUpload from "@/components/plants/FileUpload";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  ArrowLeft,
+  MapPin,
+  User,
+  Calendar,
+  FileText,
+  Edit,
+  Trash2,
+} from "lucide-react";
 
 const PlantDetailPage = () => {
   const { id } = useParams();
@@ -17,41 +25,41 @@ const PlantDetailPage = () => {
   const [plant, setPlant] = useState(null);
 
   useEffect(() => {
-    const plants = JSON.parse(localStorage.getItem('hydroPlants') || '[]');
-    const foundPlant = plants.find(p => p.id === id);
+    const plants = JSON.parse(localStorage.getItem("hydroPlants") || "[]");
+    const foundPlant = plants.find((p) => p.id === id);
     if (foundPlant) {
       setPlant(foundPlant);
     } else {
-      navigate('/plants');
+      navigate("/plants");
     }
   }, [id, navigate]);
 
   const handleDelete = () => {
-    const plants = JSON.parse(localStorage.getItem('hydroPlants') || '[]');
-    const updatedPlants = plants.filter(p => p.id !== id);
-    localStorage.setItem('hydroPlants', JSON.stringify(updatedPlants));
+    const plants = JSON.parse(localStorage.getItem("hydroPlants") || "[]");
+    const updatedPlants = plants.filter((p) => p.id !== id);
+    localStorage.setItem("hydroPlants", JSON.stringify(updatedPlants));
     toast({
-      title: 'Planta eliminada',
-      description: 'La planta ha sido eliminada correctamente',
+      title: "Planta eliminada",
+      description: "La planta ha sido eliminada correctamente",
     });
-    navigate('/plants');
+    navigate("/plants");
   };
 
   const handleFileUpload = (files) => {
-    const plants = JSON.parse(localStorage.getItem('hydroPlants') || '[]');
-    const updatedPlants = plants.map(p => {
+    const plants = JSON.parse(localStorage.getItem("hydroPlants") || "[]");
+    const updatedPlants = plants.map((p) => {
       if (p.id === id) {
         return {
           ...p,
-          files: [...(p.files || []), ...files]
+          files: [...(p.files || []), ...files],
         };
       }
       return p;
     });
-    localStorage.setItem('hydroPlants', JSON.stringify(updatedPlants));
-    setPlant(updatedPlants.find(p => p.id === id));
+    localStorage.setItem("hydroPlants", JSON.stringify(updatedPlants));
+    setPlant(updatedPlants.find((p) => p.id === id));
     toast({
-      title: 'Archivos agregados',
+      title: "Archivos agregados",
       description: `Se han agregado ${files.length} archivo(s)`,
     });
   };
@@ -61,16 +69,19 @@ const PlantDetailPage = () => {
   }
 
   const statusColors = {
-    activo: 'bg-green-100 text-green-800 border-green-200',
-    mantenimiento: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    inactivo: 'bg-red-100 text-red-800 border-red-200'
+    activo: "bg-green-100 text-green-800 border-green-200",
+    mantenimiento: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    inactivo: "bg-red-100 text-red-800 border-red-200",
   };
 
   return (
     <>
       <Helmet>
-        <title>{plant.name} - HydroManager</title>
-        <meta name="description" content={`Detalles de la planta hídrica ${plant.name}`} />
+        <title>{plant.name} - Recursos Hidricos de SDE</title>
+        <meta
+          name="description"
+          content={`Detalles de la planta hídrica ${plant.name}`}
+        />
       </Helmet>
 
       <DashboardLayout>
@@ -78,7 +89,7 @@ const PlantDetailPage = () => {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => navigate('/plants')}
+              onClick={() => navigate("/plants")}
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -112,7 +123,9 @@ const PlantDetailPage = () => {
           >
             <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{plant.name}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  {plant.name}
+                </h1>
                 <div className="flex items-center gap-2 text-gray-600">
                   <MapPin className="w-4 h-4" />
                   <span>{plant.location}</span>
@@ -129,7 +142,9 @@ const PlantDetailPage = () => {
                   <User className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500">Responsable</p>
-                    <p className="font-medium text-gray-900">{plant.responsible}</p>
+                    <p className="font-medium text-gray-900">
+                      {plant.responsible}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -137,7 +152,9 @@ const PlantDetailPage = () => {
                   <div>
                     <p className="text-sm text-gray-500">Última Inspección</p>
                     <p className="font-medium text-gray-900">
-                      {new Date(plant.lastInspection).toLocaleDateString('es-ES')}
+                      {new Date(plant.lastInspection).toLocaleDateString(
+                        "es-ES"
+                      )}
                     </p>
                   </div>
                 </div>
@@ -149,7 +166,8 @@ const PlantDetailPage = () => {
                   <div>
                     <p className="text-sm text-gray-500">Coordenadas</p>
                     <p className="font-medium text-gray-900">
-                      {plant.coordinates.lat.toFixed(6)}, {plant.coordinates.lng.toFixed(6)}
+                      {plant.coordinates.lat.toFixed(6)},{" "}
+                      {plant.coordinates.lng.toFixed(6)}
                     </p>
                   </div>
                 </div>
@@ -158,7 +176,9 @@ const PlantDetailPage = () => {
 
             {plant.description && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Descripción</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Descripción
+                </h3>
                 <p className="text-gray-600">{plant.description}</p>
               </div>
             )}
@@ -177,9 +197,9 @@ const PlantDetailPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <FileUpload 
-              plantId={plant.id} 
-              files={plant.files || []} 
+            <FileUpload
+              plantId={plant.id}
+              files={plant.files || []}
               onUpload={handleFileUpload}
             />
           </motion.div>

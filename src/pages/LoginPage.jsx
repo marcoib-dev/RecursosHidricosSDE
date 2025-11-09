@@ -1,38 +1,38 @@
-import React, { useState } from 'react';
-import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
-import { Droplets, Mail, Lock } from 'lucide-react';
+import React, { useState } from "react";
+import { Helmet } from "react-helmet";
+import { motion } from "framer-motion";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
+import { Droplets, Mail, Lock } from "lucide-react";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const result = login(formData.email, formData.password);
-    
+
     if (result.success) {
       toast({
-        title: '¡Bienvenido!',
-        description: 'Has iniciado sesión correctamente',
+        title: "¡Bienvenido!",
+        description: "Has iniciado sesión correctamente",
       });
-      navigate('/dashboard');
+      navigate("/dashboard");
     } else {
       toast({
-        title: 'Error',
+        title: "Error",
         description: result.error,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
@@ -40,8 +40,11 @@ const LoginPage = () => {
   return (
     <>
       <Helmet>
-        <title>Iniciar Sesión - HydroManager</title>
-        <meta name="description" content="Accede a tu cuenta de HydroManager para gestionar tus plantas hídricas" />
+        <title>Iniciar Sesión - Recursos Hidricos de SDE</title>
+        <meta
+          name="description"
+          content="Accede a tu cuenta de Recursos Hidricos de SDE para gestionar tus plantas hídricas"
+        />
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50 flex items-center justify-center p-4">
@@ -56,10 +59,12 @@ const LoginPage = () => {
               <div className="flex items-center justify-center space-x-2 mb-4">
                 <Droplets className="w-10 h-10 text-cyan-600" />
                 <span className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">
-                  HydroManager
+                  Recursos Hidricos de SDE
                 </span>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Iniciar Sesión</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Iniciar Sesión
+              </h1>
               <p className="text-gray-600 mt-2">Accede a tu cuenta</p>
             </div>
 
@@ -73,7 +78,9 @@ const LoginPage = () => {
                     type="email"
                     placeholder="tu@email.com"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     className="pl-10"
                     required
                   />
@@ -89,15 +96,17 @@ const LoginPage = () => {
                     type="password"
                     placeholder="••••••••"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                     className="pl-10"
                     required
                   />
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700"
               >
                 Iniciar Sesión
@@ -106,15 +115,21 @@ const LoginPage = () => {
 
             <div className="mt-6 text-center">
               <p className="text-gray-600">
-                ¿No tienes cuenta?{' '}
-                <Link to="/register" className="text-cyan-600 hover:text-cyan-700 font-semibold">
+                ¿No tienes cuenta?{" "}
+                <Link
+                  to="/register"
+                  className="text-cyan-600 hover:text-cyan-700 font-semibold"
+                >
                   Regístrate aquí
                 </Link>
               </p>
             </div>
 
             <div className="mt-4 text-center">
-              <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
+              <Link
+                to="/"
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
                 ← Volver al inicio
               </Link>
             </div>
