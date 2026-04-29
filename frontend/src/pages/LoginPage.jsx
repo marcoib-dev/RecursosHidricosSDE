@@ -147,12 +147,12 @@ const LoginPage = () => {
 
             <div className="mt-6 text-center">
               <p className="text-gray-600">
-                ¿No tienes cuenta?{" "}
+                ¿Tienes problemas para iniciar sesion? {" "}
                 <Link
-                  to="/register"
+                  to="/NotFoundPage"
                   className="text-cyan-600 hover:text-cyan-700 font-semibold"
                 >
-                  Regístrate aquí
+                  <br />Contacta con un administrador para obtener ayuda
                 </Link>
               </p>
             </div>
