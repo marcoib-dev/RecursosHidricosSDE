@@ -505,7 +505,7 @@ app.get('/api/notificaciones', authenticateToken, async (_req, res) => {
        WHERE a.entidad = 'obra'
          AND a.titulo IN ('CREAR_OBRA', 'ACTUALIZAR_OBRA', 'ELIMINAR_OBRA')
          AND a.fecha > DATE_SUB(NOW(), INTERVAL 24 HOUR)
-       ORDER BY a.fecha ASC
+       ORDER BY a.fecha DESC
        LIMIT 10`
     );
 

@@ -37,7 +37,9 @@ const DashboardLayout = ({ children }) => {
   const loadNotifs = useCallback(async () => {
     try {
       const data = await notificacionesAPI.get();
-      const alertas = data.alertas || [];
+      const alertas = [...(data.alertas || [])].sort(
+        (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+      );
       const storedSeenIds = new Set(seenNotificationIds.map((id) => String(id)));
       const filtered = alertas.filter((alert) => !storedSeenIds.has(String(alert.id)));
       setNotificaciones(filtered);
@@ -55,6 +57,14 @@ const DashboardLayout = ({ children }) => {
     setSeenNotificationIds(nextSeenIds);
     localStorage.setItem(SEEN_NOTIFICATION_KEY, JSON.stringify(nextSeenIds));
   }, [seenNotificationIds]);
+
+  const markAllNotificationsAsSeen = useCallback(() => {
+    const allNotificationIds = notificaciones.map((notificacion) => String(notificacion.id));
+    const nextSeenIds = Array.from(new Set([...seenNotificationIds, ...allNotificationIds]));
+    setSeenNotificationIds(nextSeenIds);
+    localStorage.setItem(SEEN_NOTIFICATION_KEY, JSON.stringify(nextSeenIds));
+    setNotificacionesAbiertas(false);
+  }, [notificaciones, seenNotificationIds]);
 
   // Actualizar notificaciones cuando cambian las vistas
   useEffect(() => {
@@ -204,13 +214,23 @@ const DashboardLayout = ({ children }) => {
                               : 'No hay notificaciones nuevas'}
                           </p>
                         </div>
-                        <button
-                          onClick={() => setNotificacionesAbiertas(false)}
-                          className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                          aria-label="Cerrar notificaciones"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          {unreadNotifications.length > 0 && (
+                            <button
+                              onClick={markAllNotificationsAsSeen}
+                              className="rounded-lg border border-cyan-200 px-2.5 py-1 text-xs font-medium text-cyan-700 hover:bg-cyan-50"
+                            >
+                              Marcar todas como leídas
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setNotificacionesAbiertas(false)}
+                            className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                            aria-label="Cerrar notificaciones"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="max-h-96 overflow-y-auto">
