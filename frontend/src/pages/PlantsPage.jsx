@@ -21,21 +21,28 @@ import useObras from "@/hooks/useObras";
 import { reportesAPI } from "@/services/api";
 import { Plus, Search, Droplets, Download } from "lucide-react";
 
+// Helper function to normalize tipo values
+const normalizeTipo = (tipo) => {
+  if (!tipo) return null;
+  return tipo === "planta_potabilizadora" ? "planta" : tipo;
+};
+
 const PlantsPage = () => {
   const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user, permisos } = useAuth();
   const { obras, loading, addObra, updateObra, deleteObra } = useObras();
   const [filteredObras, setFilteredObras] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState(searchParams.get('estado') || "all");
+  const [tipoFilter, setTipoFilter] = useState(searchParams.get('tipo') || "all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingObra, setEditingObra] = useState(null);
 
   useEffect(() => {
     filterObras();
-  }, [obras, searchTerm, statusFilter]);
+  }, [obras, searchTerm, statusFilter, tipoFilter]);
 
   const filterObras = () => {
     let filtered = [...obras];
@@ -51,6 +58,10 @@ const PlantsPage = () => {
 
     if (statusFilter !== "all") {
       filtered = filtered.filter((obra) => obra.estado === statusFilter);
+    }
+
+    if (tipoFilter !== "all") {
+      filtered = filtered.filter((obra) => normalizeTipo(obra.tipo) === tipoFilter);
     }
 
     setFilteredObras(filtered);
@@ -173,6 +184,16 @@ const PlantsPage = () => {
                 className="pl-10"
               />
             </div>
+            <Select value={tipoFilter} onValueChange={setTipoFilter}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Filtrar por tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los tipos</SelectItem>
+                <SelectItem value="pozo">Pozo</SelectItem>
+                <SelectItem value="planta">Planta</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Filtrar por estado" />
