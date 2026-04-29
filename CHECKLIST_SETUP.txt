@@ -1,0 +1,204 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║                    ✅ CHECKLIST DE SETUP - IMPRIMIBLE                           ║
+║                     Recursos Hídricos SDE - v1.0                               ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+NOMBRE: ____________________________     FECHA: ____________________________
+
+MÁQUINA: Windows / Linux / Mac (marcar una)
+
+
+█████████████████████████████████████████████████████████████████████████████████
+  FASE 1: VERIFICACIÓN PREVIA
+█████████████████████████████████████████████████████████████████████████████████
+
+  ☐ Node.js instalado (verificar: node --version)
+  ☐ npm instalado (verificar: npm --version)
+  ☐ MySQL instalado en la máquina
+  ☐ Proyecto clonado en carpeta local
+  ☐ Carpetas backend/ y frontend/ existen
+
+
+█████████████████████████████████████████████████████████████████████████████████
+  FASE 2: VERIFICACIÓN MYSQL
+█████████████████████████████████████████████████████████████████████████████████
+
+  Windows:
+    ☐ Abierto: Services (Win+R > services.msc)
+    ☐ Encontrado: Servicio MySQL80 (o similar)
+    ☐ Estado: Running / Started
+    
+  Linux:
+    ☐ Ejecutado: sudo systemctl start mysql
+    ☐ Verificado: sudo systemctl status mysql
+    
+  Mac:
+    ☐ Ejecutado: brew services start mysql
+    ☐ Verificado: brew services list | grep mysql
+
+
+█████████████████████████████████████████████████████████████████████████████████
+  FASE 3: DIAGNÓSTICO AUTOMÁTICO
+█████████████████████████████████████████████████████████████████████████████████
+
+  ☐ Abierta PowerShell / Terminal en la carpeta del proyecto
+  ☐ Ejecutado: cd backend
+  ☐ Ejecutado: node diagnostico-bd.js
+  ☐ Resultado: Todos los checks tienen ✅
+
+    Detalle del diagnóstico:
+    ☐ ✅ MySQL conectado
+    ☐ ✅ Base de datos existe
+    ☐ ✅ Tablas creadas (6 tablas)
+    ☐ ✅ Credenciales correctas
+    ☐ ✅ Conexión estable
+
+
+█████████████████████████████████████████████████████████████████████████████████
+  FASE 4: INSTALACIÓN DE DEPENDENCIAS
+█████████████████████████████████████████████████████████████████████████████████
+
+  Terminal 1 (Backend):
+    ☐ Ejecutado: cd backend
+    ☐ Ejecutado: npm install
+    ☐ Completado sin errores
+
+  Terminal 2 (Frontend):
+    ☐ Ejecutado: cd frontend
+    ☐ Ejecutado: npm install
+    ☐ Completado sin errores
+
+
+█████████████████████████████████████████████████████████████████████████████████
+  FASE 5: INICIAR SERVIDORES
+█████████████████████████████████████████████████████████████████████████████████
+
+  Terminal 1 (Backend):
+    ☐ Ejecutado: cd backend && npm run dev
+    ☐ Mensaje: "✨ Recursos Hídricos SDE - Backend corriendo en http://localhost:4000"
+    ☐ Mensaje: "✅ MySQL conectado a recursos_hidricos_sde"
+    ☐ Puerto: http://localhost:4000 accesible
+
+  Terminal 2 (Frontend):
+    ☐ Ejecutado: cd frontend && npm run dev
+    ☐ Mensaje: "➜ Local: http://localhost:3000/"
+    ☐ Puerto: http://localhost:3000 accesible
+
+
+█████████████████████████████████████████████████████████████████████████████████
+  FASE 6: VALIDACIÓN DE LA APP
+█████████████████████████████████████████████████████████████████████████████████
+
+  Navegador:
+    ☐ Abierto: http://localhost:3000
+    ☐ Página carga sin errores
+    ☐ Página NO está en blanco
+
+  Página de Login:
+    ☐ Visible: Formulario de login
+    ☐ Funcionan: Campos de entrada
+    ☐ Funciona: Botón "Iniciar Sesión"
+
+  Login Exitoso:
+    ☐ Email: admin@sde.com
+    ☐ Contraseña: admin123 (o la configurada en seed)
+    ☐ Click: "Iniciar Sesión"
+    ☐ Resultado: Redirige a http://localhost:3000/dashboard
+    ☐ Dashboard: Carga correctamente
+
+
+█████████████████████████████████████████████████████████████████████████████████
+  FASE 7: FUNCIONALIDADES BÁSICAS
+█████████████████████████████████████████████████████████████████████████████████
+
+  Navegación:
+    ☐ Click en "Dashboard" funciona
+    ☐ Click en "Plantas" funciona
+    ☐ Click en "Mapa" funciona
+    ☐ Click en "Usuarios" funciona (si es admin)
+    ☐ Click en "Auditoría" funciona (si es admin)
+    ☐ Click en "Perfil" funciona
+
+  Datos:
+    ☐ Dashboard muestra estadísticas
+    ☐ Plantas muestra listado
+    ☐ Mapa muestra puntos
+    ☐ No hay errores en consola
+
+  Logout:
+    ☐ Click en perfil > "Cerrar Sesión"
+    ☐ Redirige a login
+    ☐ No es posible acceder a dashboard sin login
+
+
+█████████████████████████████████████████████████████████████████████████████████
+  NOTAS Y OBSERVACIONES
+█████████████████████████████████████████████████████████████████████████████████
+
+  Problemas encontrados:
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                                                                          │
+  │ ___________________________________________________________________     │
+  │ ___________________________________________________________________     │
+  │ ___________________________________________________________________     │
+  │ ___________________________________________________________________     │
+  │                                                                          │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  Soluciones aplicadas:
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                                                                          │
+  │ ___________________________________________________________________     │
+  │ ___________________________________________________________________     │
+  │ ___________________________________________________________________     │
+  │ ___________________________________________________________________     │
+  │                                                                          │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+
+█████████████████████████████████████████████████████████████████████████████████
+  RESULTADO FINAL
+█████████████████████████████████████████████████████████████████████████████████
+
+  Total de checks completados: ______ / 45
+
+  Resultado:
+    ☐ ✅ TODO FUNCIONA CORRECTAMENTE
+    ☐ ⚠️  HAY ALGUNOS PROBLEMAS (detallar arriba)
+    ☐ ❌ NO FUNCIONA (ver DIAGNOSTICO_BD.md)
+
+
+  Nombre del Usuario: ________________________________
+
+  Firma: ________________________     Fecha: ________________________
+
+
+█████████████████████████████████████████████████████████████████████████████████
+  PRÓXIMOS PASOS
+█████████████████████████████████████████████████████████████████████████████████
+
+  ✅ Si completaste todos los checks:
+     • El proyecto está 100% operativo
+     • Puedes comenzar a desarrollar
+     • Mantén MySQL ejecutándose siempre
+
+  ⚠️ Si hay problemas:
+     • Consulta: DIAGNOSTICO_BD.md
+     • O contacta: con el resultado de node backend/diagnostico-bd.js
+
+  📧 Para compartir con compañeros:
+     • Envía: Este checklist completado
+     • Envía: REPORTE_FINAL_BD.txt
+     • Copia el comando: node backend/diagnostico-bd.js
+
+
+═════════════════════════════════════════════════════════════════════════════════
+
+Creado por: [Tu nombre]
+Equipo: Recursos Hídricos SDE
+Versión: 1.0
+Fecha: 12 de Abril, 2026
+
+═════════════════════════════════════════════════════════════════════════════════
