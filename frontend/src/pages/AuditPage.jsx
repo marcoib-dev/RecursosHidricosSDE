@@ -1,10 +1,28 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Search, ChevronLeft, ChevronRight, Filter, X, Activity, User, Clock, Globe } from 'lucide-react';
+import {
+  Shield,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Activity,
+  Clock,
+  Globe,
+  Eye,
+  FileText,
+} from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { auditoriaAPI } from '../services/api';
 import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../components/ui/dialog';
 
 const ENTIDAD_LABELS = {
   obra: 'Obra',
@@ -54,6 +72,7 @@ export default function AuditPage() {
   const [search, setSearch] = useState('');
   const [searchDebounced, setSearchDebounced] = useState('');
   const [filterEntidad, setFilterEntidad] = useState('all');
+  const [selectedRegistro, setSelectedRegistro] = useState(null);
 
   // Redirect si no tiene permiso
   useEffect(() => {
@@ -123,6 +142,106 @@ export default function AuditPage() {
       return null;
     }
   };
+
+  const formatValue = (value) => {
+    if (value === null || value === undefined || value === '') return '—';
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch {
+        return '[Objeto no serializable]';
+      }
+    }
+    return String(value);
+  };
+
+  const safeStringify = (value) => {
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return 'No fue posible mostrar el detalle de este valor.';
+    }
+  };
+
+  const getDetallePrincipal = (reg, ctx) => {
+    if (!ctx) return 'Sin información adicional disponible.';
+
+    if (Array.isArray(ctx.cambios) && ctx.cambios.length > 0) {
+      return `Se detectaron ${ctx.cambios.length} cambio${ctx.cambios.length !== 1 ? 's' : ''} en este registro.`;
+    }
+
+    if (ctx.resumen?.estado || ctx.resumen?.porcentaje_avance !== undefined) {
+      const partes = [];
+      if (ctx.resumen?.estado) partes.push(`estado: ${ctx.resumen.estado}`);
+      if (ctx.resumen?.porcentaje_avance !== undefined) partes.push(`avance: ${ctx.resumen.porcentaje_avance}%`);
+      return `Actualización con ${partes.join(' y ')}.`;
+    }
+
+    if (ctx.nombre || ctx.correo || ctx.filename || ctx.body?.nombre) {
+      return [ctx.nombre, ctx.correo, ctx.filename, ctx.body?.nombre].find(Boolean);
+    }
+
+    return reg.titulo?.replace(/_/g, ' ') || 'Cambio registrado';
+  };
+
+  const selectedContext = selectedRegistro ? parseContexto(selectedRegistro.contexto) : null;
+  const selectedUserName = selectedRegistro
+    ? `${selectedRegistro.usuario_nombre || ''} ${selectedRegistro.usuario_apellido || ''}`.trim()
+    : '';
+  const selectedRole = selectedRegistro?.usuario_rol?.replace(/_/g, ' ');
+
+  const selectedDetails = useMemo(() => {
+    if (!selectedRegistro) return null;
+
+    try {
+      const ctx = parseContexto(selectedRegistro.contexto) || {};
+      const cambiosRaw = Array.isArray(ctx.cambios) ? ctx.cambios : [];
+      const cambios = cambiosRaw.slice(0, 5).map((cambio, index) => ({
+        key: `${index}-${String(cambio?.campo ?? 'campo')}`,
+        campo: formatValue(cambio?.campo),
+        anterior: formatValue(cambio?.anterior),
+        nuevo: formatValue(cambio?.nuevo),
+      }));
+
+      let resumen = 'Cambio registrado.';
+      if (cambiosRaw.length > 0) {
+        resumen = `Se detectaron ${cambiosRaw.length} cambio${cambiosRaw.length !== 1 ? 's' : ''}.`;
+      } else if (ctx.resumen?.estado || ctx.resumen?.porcentaje_avance !== undefined) {
+        const partes = [];
+        if (ctx.resumen?.estado) partes.push(`estado: ${formatValue(ctx.resumen.estado)}`);
+        if (ctx.resumen?.porcentaje_avance !== undefined) partes.push(`avance: ${formatValue(ctx.resumen.porcentaje_avance)}%`);
+        resumen = `Actualización con ${partes.join(' y ')}.`;
+      } else if (ctx.nombre || ctx.correo || ctx.filename || ctx.body?.nombre) {
+        resumen = [ctx.nombre, ctx.correo, ctx.filename, ctx.body?.nombre].find(Boolean) || resumen;
+      }
+
+      return {
+        titulo: selectedRegistro.titulo?.replace(/_/g, ' ') || 'Cambio registrado',
+        resumen,
+        usuario: selectedUserName || '—',
+        rol: selectedRole || '—',
+        entidad: ENTIDAD_LABELS[selectedRegistro.entidad] || selectedRegistro.entidad || '—',
+        entidadId: formatValue(selectedRegistro.entidad_id),
+        fecha: formatFecha(selectedRegistro.fecha),
+        ip: selectedRegistro.ip_address || '—',
+        cambios,
+        totalCambios: cambiosRaw.length,
+      };
+    } catch {
+      return {
+        titulo: selectedRegistro.titulo?.replace(/_/g, ' ') || 'Cambio registrado',
+        resumen: 'No fue posible mostrar todos los detalles de este registro.',
+        usuario: selectedUserName || '—',
+        rol: selectedRole || '—',
+        entidad: ENTIDAD_LABELS[selectedRegistro.entidad] || selectedRegistro.entidad || '—',
+        entidadId: formatValue(selectedRegistro.entidad_id),
+        fecha: formatFecha(selectedRegistro.fecha),
+        ip: selectedRegistro.ip_address || '—',
+        cambios: [],
+        totalCambios: 0,
+      };
+    }
+  }, [selectedRegistro]);
 
   return (
     <DashboardLayout>
@@ -218,7 +337,16 @@ export default function AuditPage() {
                       <tr
                         id={`audit-row-${reg.id}`}
                         key={reg.id}
-                        className={`transition-colors ${isHighlighted ? 'bg-cyan-50 ring-1 ring-cyan-200' : 'hover:bg-gray-50/50'}`}
+                        onClick={() => setSelectedRegistro(reg)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedRegistro(reg);
+                          }
+                        }}
+                        className={`cursor-pointer transition-colors ${isHighlighted ? 'bg-cyan-50 ring-1 ring-cyan-200' : 'hover:bg-gray-50/50'}`}
                       >
                         <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
@@ -250,22 +378,40 @@ export default function AuditPage() {
                           {ENTIDAD_LABELS[reg.entidad] || reg.entidad}
                           {reg.entidad_id && <span className="text-gray-400 ml-1">#{reg.entidad_id}</span>}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500 max-w-[300px]">
-                          {reg.titulo === 'ACTUALIZAR_OBRA' && ctx?.cambios && Array.isArray(ctx.cambios) && ctx.cambios.length > 0 ? (
-                            <div className="space-y-1">
-                              {ctx.cambios.slice(0, 2).map((cambio, i) => (
-                                <div key={i} className="text-xs leading-4">
-                                  <span className="font-medium text-gray-700">{cambio.campo}:</span>
-                                  <span className="text-gray-500"> {cambio.anterior} → {cambio.nuevo}</span>
-                                </div>
-                              ))}
-                              {ctx.cambios.length > 2 && (
-                                <div className="text-xs text-gray-400">+{ctx.cambios.length - 2} más</div>
+                        <td className="px-4 py-3 text-sm text-gray-500 max-w-[300px] align-top">
+                          <div className="flex flex-col items-start gap-2 max-w-full">
+                            <div className="space-y-1 max-w-full">
+                              {reg.titulo === 'ACTUALIZAR_OBRA' && ctx?.cambios && Array.isArray(ctx.cambios) && ctx.cambios.length > 0 ? (
+                                <>
+                                  {ctx.cambios.slice(0, 2).map((cambio, i) => (
+                                    <div key={i} className="text-xs leading-4 break-words">
+                                      <span className="font-medium text-gray-700">{cambio.campo}:</span>
+                                      <span className="text-gray-500"> {cambio.anterior} → {cambio.nuevo}</span>
+                                    </div>
+                                  ))}
+                                  {ctx.cambios.length > 2 && (
+                                    <div className="text-xs text-gray-400">+{ctx.cambios.length - 2} más</div>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="max-w-full break-words leading-5 text-gray-600">
+                                  {ctx?.nombre || ctx?.correo || ctx?.filename || '—'}
+                                </span>
                               )}
                             </div>
-                          ) : (
-                            <>{ctx?.nombre || ctx?.correo || ctx?.filename || '—'}</>
-                          )}
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRegistro(reg);
+                              }}
+                              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-medium text-cyan-700 hover:bg-cyan-100"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              Ver más
+                            </button>
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
                           <div className="flex items-center gap-1">
@@ -329,6 +475,96 @@ export default function AuditPage() {
             </div>
           )}
         </motion.div>
+
+        <Dialog open={Boolean(selectedRegistro)} onOpenChange={(open) => !open && setSelectedRegistro(null)}>
+          <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto border-cyan-100">
+            {selectedRegistro && (
+              <>
+                <DialogHeader className="text-left">
+                  <DialogTitle className="flex items-center gap-2 text-2xl text-gray-900">
+                    <Shield className="h-5 w-5 text-cyan-600" />
+                    Detalle de auditoría
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-600">
+                    Resumen simple del cambio para revisar rápido qué pasó.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">Acción</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900">{selectedDetails?.titulo || '—'}</p>
+                    <p className="mt-1 text-sm text-gray-600">{selectedDetails?.resumen || '—'}</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Usuario</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900">{selectedDetails?.usuario || '—'}</p>
+                    <p className="mt-1 text-sm text-gray-600">{selectedDetails?.rol || '—'}</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Entidad</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900">
+                      {selectedDetails?.entidad || '—'}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-600">ID: {selectedDetails?.entidadId || '—'}</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Fecha e IP</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900">{selectedDetails?.fecha || '—'}</p>
+                    <p className="mt-1 text-sm text-gray-600">{selectedDetails?.ip || '—'}</p>
+                  </div>
+                </div>
+
+                {selectedDetails?.cambios?.length > 0 && (
+                  <div className="rounded-2xl border border-cyan-100 bg-cyan-50/50 p-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-cyan-700" />
+                      <p className="text-sm font-semibold text-gray-900">Cambios detectados</p>
+                    </div>
+                    <div className="space-y-3">
+                      {selectedDetails.cambios.map((cambio, index) => (
+                        <div key={cambio.key} className="rounded-xl border border-cyan-100 bg-white p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="font-semibold text-gray-900">{cambio.campo}</p>
+                            <span className="text-xs text-gray-400">Cambio {index + 1}</span>
+                          </div>
+                          <div className="mt-2 grid gap-2 md:grid-cols-2">
+                            <div className="rounded-lg bg-red-50 p-2">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-red-700">Antes</p>
+                              <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-700">{cambio.anterior}</p>
+                            </div>
+                            <div className="rounded-lg bg-emerald-50 p-2">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Después</p>
+                              <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-700">{cambio.nuevo}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {selectedDetails.totalCambios > selectedDetails.cambios.length && (
+                        <p className="text-sm text-gray-500">
+                          Se muestran los primeros {selectedDetails.cambios.length} cambios de {selectedDetails.totalCambios}.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRegistro(null)}
+                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
