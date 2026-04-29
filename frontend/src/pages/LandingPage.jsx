@@ -19,11 +19,11 @@ const LandingPage = () => {
     {
       icon: <Droplets className="w-8 h-8" />,
       title: "Gestión Centralizada",
-      description: "Administra todas tus plantas hídricas desde un solo lugar",
+      description: "Administra todas las plantas hídricas desde un solo lugar",
     },
     {
       icon: <MapPin className="w-8 h-8" />,
-      title: "Mapas Interactivos",
+      title: "Mapa Interactivo",
       description:
         "Visualiza la ubicación exacta de cada planta en tiempo real",
     },
@@ -31,12 +31,12 @@ const LandingPage = () => {
       icon: <BarChart3 className="w-8 h-8" />,
       title: "Análisis y Reportes",
       description:
-        "Gráficos detallados del estado operativo de tus instalaciones",
+        "Gráficos detallados del estado operativo de las instalaciones",
     },
     {
       icon: <FileText className="w-8 h-8" />,
       title: "Documentación",
-      description: "Adjunta certificados, reportes y archivos importantes",
+      description: "Posibilidad de adjuntar certificados, reportes y archivos importantes",
     },
     {
       icon: <Users className="w-8 h-8" />,
@@ -46,7 +46,7 @@ const LandingPage = () => {
     {
       icon: <Shield className="w-8 h-8" />,
       title: "Seguridad",
-      description: "Tus datos protegidos con los más altos estándares",
+      description: "Datos protegidos con los más altos estándares",
     },
   ];
 
@@ -103,7 +103,7 @@ const LandingPage = () => {
               </h1>
               <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
                 Plataforma profesional para administrar, monitorear y optimizar
-                todas tus instalaciones hídricas desde un solo lugar
+                todas las instalaciones hídricas desde un solo lugar
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
@@ -111,7 +111,7 @@ const LandingPage = () => {
                   onClick={() => navigate("/register")}
                   className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-lg px-8"
                 >
-                  Comenzar Ahora
+                  Acceso al Sistema
                 </Button>
                 <Button
                   size="lg"
@@ -149,7 +149,7 @@ const LandingPage = () => {
               className="text-center mb-16"
             >
               <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                Todo lo que necesitas en una plataforma
+                Modulos incluidos en la plataforma
               </h2>
               <p className="text-xl text-gray-600">
                 Herramientas profesionales para una gestión eficiente
@@ -188,18 +188,17 @@ const LandingPage = () => {
               viewport={{ once: true }}
             >
               <h2 className="text-4xl font-bold mb-6">
-                ¿Listo para optimizar tu gestión?
+                Portal de acceso
               </h2>
               <p className="text-xl mb-8 text-cyan-50">
-                Únete a cientos de profesionales que ya confían en Recursos
-                Hidricos de SDE
+                Inicia sesion para empezar a gestionar
               </p>
               <Button
                 size="lg"
-                onClick={() => navigate("/register")}
+                onClick={() => navigate("/login")}
                 className="bg-white text-cyan-600 hover:bg-gray-100 text-lg px-8"
               >
-                Crear Cuenta Gratis
+                Iniciar Sesión
               </Button>
             </motion.div>
           </div>
