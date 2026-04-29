@@ -73,15 +73,12 @@ const LandingPage = () => {
                 </span>
               </div>
               <div className="flex items-center space-x-4">
-                <Button variant="ghost" onClick={() => navigate("/login")}>
+                <Button 
+                className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700" 
+                onClick={() => navigate("/login")}>
                   Iniciar Sesión
                 </Button>
-                <Button
-                  onClick={() => navigate("/register")}
-                  className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700"
-                >
-                  Registrarse
-                </Button>
+                
               </div>
             </div>
           </div>
@@ -195,7 +192,7 @@ const LandingPage = () => {
               </p>
               <Button
                 size="lg"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/register")}
                 className="bg-white text-cyan-600 hover:bg-gray-100 text-lg px-8"
               >
                 Iniciar Sesión
