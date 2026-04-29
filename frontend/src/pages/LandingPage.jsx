@@ -105,7 +105,7 @@ const LandingPage = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
                   size="lg"
-                  onClick={() => navigate("/register")}
+                  onClick={() => navigate("/login")}
                   className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-lg px-8"
                 >
                   Acceso al Sistema
