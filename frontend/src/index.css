@@ -38,6 +38,15 @@
   }
 }
 
+/* ═══ Fix z-index: todos los portales de Radix UI por encima de todo ═══ */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+[data-radix-portal] {
+  z-index: 9999 !important;
+}
+
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;

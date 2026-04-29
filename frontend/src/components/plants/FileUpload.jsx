@@ -1,38 +1,40 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Upload, FileText, Download, Trash2 } from 'lucide-react';
 
-const FileUpload = ({ plantId, files = [], onUpload }) => {
+const FileUpload = ({ plantId, files = [], onUpload, onDelete, canUpload = true, canDeleteFile }) => {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState(null);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const selectedFiles = Array.from(e.target.files);
     if (selectedFiles.length === 0) return;
 
     setUploading(true);
     
-    const newFiles = selectedFiles.map(file => ({
-      id: Date.now() + Math.random(),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      uploadedAt: new Date().toISOString()
-    }));
-
-    setTimeout(() => {
-      onUpload(newFiles);
-      setUploading(false);
-      e.target.value = '';
-    }, 500);
+    // Pasar los archivos reales al padre para que suba via API
+    await onUpload(selectedFiles);
+    setUploading(false);
+    e.target.value = '';
   };
 
   const handleDelete = (fileId) => {
-    toast({
-      title: 'Archivo eliminado',
-      description: 'El archivo ha sido eliminado correctamente',
-    });
+    if (onDelete) {
+      onDelete(fileId);
+    }
+    setFileToDelete(null);
   };
 
   const formatFileSize = (bytes) => {
@@ -50,25 +52,27 @@ const FileUpload = ({ plantId, files = [], onUpload }) => {
           <FileText className="w-5 h-5 text-cyan-600" />
           Documentos y Archivos
         </h3>
-        <label htmlFor="file-upload">
-          <Button
-            type="button"
-            disabled={uploading}
-            className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700"
-            onClick={() => document.getElementById('file-upload').click()}
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            {uploading ? 'Subiendo...' : 'Subir Archivos'}
-          </Button>
-          <input
-            id="file-upload"
-            type="file"
-            multiple
-            onChange={handleFileChange}
-            className="hidden"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-          />
-        </label>
+        {canUpload && onUpload && (
+          <label htmlFor="file-upload">
+            <Button
+              type="button"
+              disabled={uploading}
+              className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700"
+              onClick={() => document.getElementById('file-upload').click()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {uploading ? 'Subiendo...' : 'Subir Archivos'}
+            </Button>
+            <input
+              id="file-upload"
+              type="file"
+              multiple
+              onChange={handleFileChange}
+              className="hidden"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+            />
+          </label>
+        )}
       </div>
 
       {files.length > 0 ? (
@@ -81,9 +85,9 @@ const FileUpload = ({ plantId, files = [], onUpload }) => {
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <FileText className="w-5 h-5 text-cyan-600 flex-shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-gray-900 truncate">{file.name}</p>
+                  <p className="font-medium text-gray-900 truncate">{file.nombre_original || file.name}</p>
                   <p className="text-sm text-gray-500">
-                    {formatFileSize(file.size)} • {new Date(file.uploadedAt).toLocaleDateString('es-ES')}
+                    {formatFileSize(file.tamano || file.size)} • {new Date(file.created_at || file.uploadedAt).toLocaleDateString('es-ES')}
                   </p>
                 </div>
               </div>
@@ -91,20 +95,22 @@ const FileUpload = ({ plantId, files = [], onUpload }) => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => toast({
-                    title: '🚧 Esta función no está implementada aún',
-                    description: '¡Pero no te preocupes! Puedes solicitarla en tu próximo prompt! 🚀'
-                  })}
+                  onClick={() => {
+                    const token = localStorage.getItem('token');
+                    window.open(`http://localhost:4000/api/archivos/download/${file.id}?token=${token}`, '_blank');
+                  }}
                 >
                   <Download className="w-4 h-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(file.id)}
-                >
-                  <Trash2 className="w-4 h-4 text-red-600" />
-                </Button>
+                {canDeleteFile && canDeleteFile(file) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFileToDelete(file)}
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </Button>
+                )}
               </div>
             </div>
           ))}
@@ -116,6 +122,26 @@ const FileUpload = ({ plantId, files = [], onUpload }) => {
           <p className="text-sm">Sube certificados, reportes o documentos importantes</p>
         </div>
       )}
+
+      <AlertDialog open={!!fileToDelete} onOpenChange={(open) => !open && setFileToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar archivo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará el archivo <strong>"{fileToDelete?.nombre_original || fileToDelete?.name}"</strong>. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDelete(fileToDelete?.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Sí, eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

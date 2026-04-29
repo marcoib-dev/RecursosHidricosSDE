@@ -1,17 +1,41 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
-const StatusChart = ({ plants }) => {
-  const data = [
-    { name: 'Activo', value: plants.filter(p => p.status === 'activo').length, color: '#10b981' },
-    { name: 'Mantenimiento', value: plants.filter(p => p.status === 'mantenimiento').length, color: '#f59e0b' },
-    { name: 'Inactivo', value: plants.filter(p => p.status === 'inactivo').length, color: '#ef4444' }
-  ];
+const ESTADO_LABELS = {
+  en_funcionamiento: 'En Funcionamiento',
+  en_reparacion: 'En Reparación',
+  fuera_de_servicio: 'Fuera de Servicio',
+  en_construccion: 'En Construcción',
+  en_estudio: 'En Estudio',
+  operativa: 'Operativa',
+  suspendida: 'Suspendida',
+  finalizada: 'Finalizada',
+};
+
+const ESTADO_COLORS = {
+  en_funcionamiento: '#10b981',
+  en_reparacion: '#f59e0b',
+  fuera_de_servicio: '#ef4444',
+  en_construccion: '#3b82f6',
+  en_estudio: '#8b5cf6',
+  operativa: '#10b981',
+  suspendida: '#f59e0b',
+  finalizada: '#6b7280',
+};
+
+const StatusChart = ({ chartData }) => {
+  const data = chartData?.distribucionEstados?.map(item => ({
+    name: ESTADO_LABELS[item.estado] || item.estado,
+    value: parseInt(item.count),
+    color: ESTADO_COLORS[item.estado] || '#94a3b8',
+  })) || [];
+
+  const hasData = data.some(d => d.value > 0);
 
   return (
     <div className="bg-white rounded-xl p-6 border border-gray-200 h-full">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Estado de Plantas</h3>
-      {plants.length > 0 ? (
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribución por Estado</h3>
+      {hasData ? (
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie

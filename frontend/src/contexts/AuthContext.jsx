@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authAPI } from '@/services/api';
+import { getPermisos } from '@/lib/permissions';
+import LoadingSpinner from '@/components/ui/loading-spinner';
 
 const AuthContext = createContext(null);
 
@@ -12,65 +15,64 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [permisos, setPermisos] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Al cargar, verificar si hay token guardado y obtener datos del usuario
   useEffect(() => {
-    const storedUser = localStorage.getItem('hydroUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    const token = localStorage.getItem('token');
+    if (token) {
+      authAPI.me()
+        .then((data) => {
+          setUser(data.user);
+          setPermisos(data.permisos || getPermisos(data.user.rol));
+          localStorage.setItem('user', JSON.stringify(data.user));
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  const login = (email, password) => {
-    const users = JSON.parse(localStorage.getItem('hydroUsers') || '[]');
-    const foundUser = users.find(u => u.email === email && u.password === password);
-    
-    if (foundUser) {
-      const userWithoutPassword = { ...foundUser };
-      delete userWithoutPassword.password;
-      setUser(userWithoutPassword);
-      localStorage.setItem('hydroUser', JSON.stringify(userWithoutPassword));
+  const login = async (correo, contrasena) => {
+    try {
+      const data = await authAPI.login(correo, contrasena);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+      setPermisos(data.permisos || getPermisos(data.user.rol));
       return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
     }
-    return { success: false, error: 'Credenciales inválidas' };
   };
 
-  const register = (userData) => {
-    const users = JSON.parse(localStorage.getItem('hydroUsers') || '[]');
-    
-    if (users.find(u => u.email === userData.email)) {
-      return { success: false, error: 'El email ya está registrado' };
+  const register = async (userData) => {
+    try {
+      const data = await authAPI.register(userData);
+      return { success: true, user: data.user };
+    } catch (error) {
+      return { success: false, error: error.message };
     }
-
-    const newUser = {
-      id: Date.now().toString(),
-      ...userData,
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(newUser);
-    localStorage.setItem('hydroUsers', JSON.stringify(users));
-
-    const userWithoutPassword = { ...newUser };
-    delete userWithoutPassword.password;
-    setUser(userWithoutPassword);
-    localStorage.setItem('hydroUser', JSON.stringify(userWithoutPassword));
-    
-    return { success: true };
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('hydroUser');
+    setPermisos(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   if (loading) {
-    return null;
+    return <LoadingSpinner />;
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, permisos, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

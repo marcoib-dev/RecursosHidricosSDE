@@ -1,5 +1,5 @@
 import React from "react";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -214,7 +214,7 @@ const LandingPage = () => {
               </span>
             </div>
             <p className="text-sm">
-              © 2025 Recursos Hidricos de SDE. Gestión profesional de plantas
+              © {new Date().getFullYear()} Recursos Hidricos de SDE. Gestión profesional de plantas
               hídricas.
             </p>
           </div>

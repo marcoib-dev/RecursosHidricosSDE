@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -15,103 +15,107 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Search, Droplets } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { puedeEditarObra } from "@/lib/permissions";
+import useObras from "@/hooks/useObras";
+import { reportesAPI } from "@/services/api";
+import { Plus, Search, Droplets, Download } from "lucide-react";
 
 const PlantsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [plants, setPlants] = useState([]);
-  const [filteredPlants, setFilteredPlants] = useState([]);
+  const { user, permisos } = useAuth();
+  const { obras, loading, addObra, updateObra, deleteObra } = useObras();
+  const [filteredObras, setFilteredObras] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPlant, setEditingPlant] = useState(null);
+  const [editingObra, setEditingObra] = useState(null);
 
   useEffect(() => {
-    loadPlants();
-  }, []);
+    filterObras();
+  }, [obras, searchTerm, statusFilter]);
 
-  useEffect(() => {
-    filterPlants();
-  }, [plants, searchTerm, statusFilter]);
-
-  const loadPlants = () => {
-    const storedPlants = JSON.parse(
-      localStorage.getItem("hydroPlants") || "[]"
-    );
-    setPlants(storedPlants);
-  };
-
-  const filterPlants = () => {
-    let filtered = [...plants];
+  const filterObras = () => {
+    let filtered = [...obras];
 
     if (searchTerm) {
       filtered = filtered.filter(
-        (plant) =>
-          plant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          plant.location.toLowerCase().includes(searchTerm.toLowerCase())
+        (obra) =>
+          obra.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          obra.ubicacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (obra.responsable && obra.responsable.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter((plant) => plant.status === statusFilter);
+      filtered = filtered.filter((obra) => obra.estado === statusFilter);
     }
 
-    setFilteredPlants(filtered);
+    setFilteredObras(filtered);
   };
 
-  const handleSavePlant = (plantData) => {
-    let updatedPlants;
+  const handleSaveObra = async (obraData) => {
+    let result;
+    if (editingObra) {
+      result = await updateObra(editingObra.id, obraData);
+      if (result.success) {
+        toast({
+          title: "¡Obra actualizada!",
+          description: "Los cambios se han guardado correctamente",
+        });
+      }
+    } else {
+      result = await addObra(obraData);
+      if (result.success) {
+        toast({
+          title: "¡Obra creada!",
+          description: "La nueva obra se ha agregado correctamente",
+        });
+      }
+    }
 
-    if (editingPlant) {
-      updatedPlants = plants.map((p) =>
-        p.id === editingPlant.id ? { ...plantData, id: editingPlant.id } : p
-      );
+    if (!result.success) {
       toast({
-        title: "¡Planta actualizada!",
-        description: "Los cambios se han guardado correctamente",
+        title: "Error",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDialogOpen(false);
+    setEditingObra(null);
+  };
+
+  const handleDeleteObra = async (obraId) => {
+    const result = await deleteObra(obraId);
+    if (result.success) {
+      toast({
+        title: "Obra eliminada",
+        description: "La obra ha sido eliminada correctamente",
       });
     } else {
-      const newPlant = {
-        ...plantData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-      };
-      updatedPlants = [...plants, newPlant];
       toast({
-        title: "¡Planta creada!",
-        description: "La nueva planta se ha agregado correctamente",
+        title: "Error",
+        description: result.error,
+        variant: "destructive",
       });
     }
-
-    localStorage.setItem("hydroPlants", JSON.stringify(updatedPlants));
-    setPlants(updatedPlants);
-    setIsDialogOpen(false);
-    setEditingPlant(null);
   };
 
-  const handleDeletePlant = (plantId) => {
-    const updatedPlants = plants.filter((p) => p.id !== plantId);
-    localStorage.setItem("hydroPlants", JSON.stringify(updatedPlants));
-    setPlants(updatedPlants);
-    toast({
-      title: "Planta eliminada",
-      description: "La planta ha sido eliminada correctamente",
-    });
-  };
-
-  const handleEditPlant = (plant) => {
-    setEditingPlant(plant);
+  const handleEditObra = (obra) => {
+    setEditingObra(obra);
     setIsDialogOpen(true);
   };
 
   return (
     <>
       <Helmet>
-        <title>Plantas Hídricas - Recursos Hidricos de SDE</title>
+        <title>Obras Hídricas - Recursos Hidricos de SDE</title>
         <meta
           name="description"
-          content="Gestiona todas tus plantas hídricas"
+          content="Gestiona todas las obras hídricas"
         />
       </Helmet>
 
@@ -120,29 +124,49 @@ const PlantsPage = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Plantas Hídricas
+                Obras Hídricas
               </h1>
               <p className="text-gray-600 mt-1">
-                Gestiona todas tus instalaciones
+                Gestiona todas las instalaciones
               </p>
             </div>
-            <Button
-              onClick={() => {
-                setEditingPlant(null);
-                setIsDialogOpen(true);
-              }}
-              className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Planta
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const params = {};
+                  if (statusFilter !== 'all') params.estado = statusFilter;
+                  reportesAPI.downloadCSV(params).then(() => {
+                    toast({ title: 'Exportación completada', description: 'El archivo CSV se descargó correctamente' });
+                  }).catch(() => {
+                    toast({ title: 'Error', description: 'No se pudo exportar', variant: 'destructive' });
+                  });
+                }}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Exportar CSV
+              </Button>
+              {permisos?.crearObra && (
+                <Button
+                  onClick={() => {
+                    setEditingObra(null);
+                    setIsDialogOpen(true);
+                  }}
+                  className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nueva Obra
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <Input
-                placeholder="Buscar por nombre o ubicación..."
+                placeholder="Buscar por nombre, ubicación o responsable..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -154,50 +178,54 @@ const PlantsPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="activo">Activo</SelectItem>
-                <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
-                <SelectItem value="inactivo">Inactivo</SelectItem>
+                <SelectItem value="en_funcionamiento">En Funcionamiento</SelectItem>
+                <SelectItem value="en_construccion">En Construcción</SelectItem>
+                <SelectItem value="en_reparacion">En Reparación</SelectItem>
+                <SelectItem value="fuera_de_servicio">Fuera de Servicio</SelectItem>
+                <SelectItem value="en_estudio">En Estudio</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {filteredPlants.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12 text-gray-500">Cargando obras...</div>
+          ) : filteredObras.length === 0 ? (
             <div className="text-center py-12">
               <Droplets className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {plants.length === 0
-                  ? "No hay plantas registradas"
+                {obras.length === 0
+                  ? "No hay obras registradas"
                   : "No se encontraron resultados"}
               </h3>
               <p className="text-gray-600 mb-6">
-                {plants.length === 0
-                  ? "Comienza agregando tu primera planta hídrica"
+                {obras.length === 0
+                  ? "Comienza agregando la primera obra hídrica"
                   : "Intenta con otros términos de búsqueda"}
               </p>
-              {plants.length === 0 && (
+              {obras.length === 0 && permisos?.crearObra && (
                 <Button
                   onClick={() => setIsDialogOpen(true)}
                   className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Agregar Primera Planta
+                  Agregar Primera Obra
                 </Button>
               )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPlants.map((plant, index) => (
+              {filteredObras.map((obra, index) => (
                 <motion.div
-                  key={plant.id}
+                  key={obra.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                 >
                   <PlantCard
-                    plant={plant}
-                    onEdit={handleEditPlant}
-                    onDelete={handleDeletePlant}
-                    onClick={() => navigate(`/plants/${plant.id}`)}
+                    plant={obra}
+                    onEdit={puedeEditarObra(user, obra) ? handleEditObra : null}
+                    onDelete={permisos?.eliminarObra ? handleDeleteObra : null}
+                    onClick={() => navigate(`/plantas/${obra.id}`)}
                   />
                 </motion.div>
               ))}
@@ -208,8 +236,8 @@ const PlantsPage = () => {
         <PlantDialog
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
-          plant={editingPlant}
-          onSave={handleSavePlant}
+          plant={editingObra}
+          onSave={handleSaveObra}
         />
       </DashboardLayout>
     </>

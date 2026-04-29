@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { getRolLabel } from "@/lib/permissions";
+import { notificacionesAPI } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -11,27 +13,73 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LayoutDashboard, Droplet, Menu, X, LogOut, User } from "lucide-react";
+import { LayoutDashboard, Droplet, Menu, X, LogOut, Users, ShieldCheck, MapPin, User, Shield, Bell, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Logo from "../icons/logo.svg";
 
 const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, permisos, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [totalAlertas, setTotalAlertas] = useState(0);
 
+  // Cargar notificaciones
+  useEffect(() => {
+    const loadNotifs = async () => {
+      try {
+        const data = await notificacionesAPI.get();
+        setTotalAlertas(data.totalAlertas || 0);
+      } catch (e) {
+        // silencioso
+      }
+    };
+    loadNotifs();
+    const interval = setInterval(loadNotifs, 60000); // cada 60s
+    return () => clearInterval(interval);
+  }, []);
+
+  // Menú dinámico según permisos
   const menuItems = [
     {
       icon: <LayoutDashboard className="w-5 h-5" />,
       label: "Dashboard",
       path: "/dashboard",
+      visible: true,
     },
     {
       icon: <Droplet className="w-5 h-5" />,
-      label: "Plantas",
-      path: "/plants",
+      label: "Obras",
+      path: "/plantas",
+      visible: true,
+      badge: totalAlertas > 0 ? totalAlertas : null,
+      badgeColor: 'bg-red-500',
     },
-  ];
+    {
+      icon: <MapPin className="w-5 h-5" />,
+      label: "Mapa",
+      path: "/mapa",
+      visible: true,
+    },
+    {
+      icon: <User className="w-5 h-5" />,
+      label: "Mi Perfil",
+      path: "/perfil",
+      visible: true,
+    },
+    {
+      icon: <Users className="w-5 h-5" />,
+      label: "Usuarios",
+      path: "/usuarios",
+      visible: permisos?.gestionarUsuarios,
+    },
+    {
+      icon: <Shield className="w-5 h-5" />,
+      label: "Auditoría",
+      path: "/auditoria",
+      visible: permisos?.verAuditoria,
+    },
+  ].filter(item => item.visible);
 
   const handleLogout = () => {
     logout();
@@ -49,7 +97,7 @@ const DashboardLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200 fixed w-full z-30">
+      <nav className="bg-white border-b border-gray-200 fixed w-full z-50">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -64,35 +112,31 @@ const DashboardLayout = ({ children }) => {
                 )}
               </button>
               <div className="flex items-center space-x-2 ml-2 lg:ml-0">
-                <svg
-                  className="w-8 h-8"
-                  width="144"
-                  height="194"
-                  viewBox="0 0 144 194"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
                 >
-                  <rect fill="white" height="194" width="144" x="0" y="0" />
-                  <path
-                    d="M 40 8 L 57 99 L 49 9 L 74 47 L 77 121 L 116 153 L 87 108 L 84 37 L 50 6 L 127 9 L 136 164 L 122 148 L 116 187 L 95 162 L 44 158 L 16 109 Z"
-                    fill="rgb(56,120,156)"
-                    stroke="none"
-                    strokeWidth="1"
-                  />
-                  <path
-                    d="M 46 84 L 47 109 L 59 133 L 76 148 L 111 162 L 82 144 L 66 128 L 55 111 Z"
-                    fill="rgb(233,240,242)"
-                    stroke="none"
-                    strokeWidth="1"
-                  />
-                </svg>
-                <span className="text-xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">
-                  Recursos Hidricos de SDE
-                </span>
+                  <img src={Logo} alt="Logo" width={32} height={32} />
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">
+                    Recursos Hidricos de SDE
+                  </h1>
+                </div>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
+              {/* Notification bell */}
+              {totalAlertas > 0 && (
+                <button
+                  onClick={() => navigate('/plantas')}
+                  className="relative p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  title={`${totalAlertas} alerta(s)`}
+                >
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full">
+                    {totalAlertas}
+                  </span>
+                </button>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -101,7 +145,7 @@ const DashboardLayout = ({ children }) => {
                   >
                     <Avatar>
                       <AvatarFallback className="bg-gradient-to-br from-cyan-600 to-teal-600 text-white">
-                        {getInitials(user?.name || "U")}
+                        {getInitials(user?.nombre_completo || user?.nombre || "U")}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -109,14 +153,21 @@ const DashboardLayout = ({ children }) => {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user?.name}</p>
-                      <p className="text-xs text-gray-500">{user?.email}</p>
-                      <p className="text-xs text-cyan-600 capitalize">
-                        {user?.role}
-                      </p>
+                      <p className="text-sm font-medium">{user?.nombre} {user?.apellido}</p>
+                      <p className="text-xs text-gray-500">{user?.correo}</p>
+                      <div className="flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3 text-cyan-600" />
+                        <p className="text-xs text-cyan-600 font-semibold">
+                          {getRolLabel(user?.rol)}
+                        </p>
+                      </div>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/perfil')}>
+                    <User className="w-4 h-4 mr-2" />
+                    Mi Perfil
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Cerrar Sesión
@@ -134,14 +185,14 @@ const DashboardLayout = ({ children }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
       </AnimatePresence>
 
       <aside
-        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 z-20 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 z-40 transform transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
@@ -160,10 +211,37 @@ const DashboardLayout = ({ children }) => {
               }`}
             >
               {item.icon}
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium flex-1 text-left">{item.label}</span>
+              {item.badge && (
+                <span className={`${item.badgeColor || 'bg-red-500'} text-white text-xs font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full px-1.5`}>
+                  {item.badge}
+                </span>
+              )}
             </button>
           ))}
         </nav>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+          <div className="flex items-center space-x-3 px-4 py-3">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+              permisos?.gestionarUsuarios ? 'bg-gradient-to-br from-purple-600 to-indigo-600' :
+              permisos?.eliminarObra ? 'bg-gradient-to-br from-amber-500 to-orange-600' :
+              'bg-gradient-to-br from-cyan-600 to-teal-600'
+            }`}>
+              {getInitials(user?.nombre_completo || user?.nombre || "U")}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{user?.nombre} {user?.apellido}</p>
+              <p className={`text-xs font-semibold ${
+                permisos?.gestionarUsuarios ? 'text-purple-600' :
+                permisos?.eliminarObra ? 'text-amber-600' :
+                'text-cyan-600'
+              }`}>
+                {getRolLabel(user?.rol)}
+              </p>
+            </div>
+          </div>
+        </div>
       </aside>
 
       <main className="lg:pl-64 pt-16">

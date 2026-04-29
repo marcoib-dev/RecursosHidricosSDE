@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,19 +8,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Mail, Lock } from "lucide-react";
+import Logo from "../components/icons/logo.svg";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    correo: "",
+    contrasena: "",
   });
+  const [errors, setErrors] = useState({});
 
-  const handleSubmit = (e) => {
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.correo) {
+      newErrors.correo = "El email es requerido";
+    } else if (!/\S+@\S+\.\S+/.test(formData.correo)) {
+      newErrors.correo = "El email no es válido";
+    }
+    if (!formData.contrasena) {
+      newErrors.contrasena = "La contraseña es requerida";
+    } else if (formData.contrasena.length < 6) {
+      newErrors.contrasena = "La contraseña debe tener al menos 6 caracteres";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = login(formData.email, formData.password);
+    if (!validate()) return;
+
+    setLoading(true);
+    const result = await login(formData.correo, formData.contrasena);
+    setLoading(false);
 
     if (result.success) {
       toast({
@@ -57,31 +80,14 @@ const LoginPage = () => {
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-cyan-100">
             <div className="text-center mb-8">
               <div className="flex items-center justify-center space-x-2 mb-4">
-                <svg
-                  className="w-10 h-10"
-                  width="144"
-                  height="194"
-                  viewBox="0 0 144 194"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
                 >
-                  <rect fill="white" height="194" width="144" x="0" y="0" />
-                  <path
-                    d="M 40 8 L 57 99 L 49 9 L 74 47 L 77 121 L 116 153 L 87 108 L 84 37 L 50 6 L 127 9 L 136 164 L 122 148 L 116 187 L 95 162 L 44 158 L 16 109 Z"
-                    fill="rgb(56,120,156)"
-                    stroke="none"
-                    strokeWidth="1"
-                  />
-                  <path
-                    d="M 46 84 L 47 109 L 59 133 L 76 148 L 111 162 L 82 144 L 66 128 L 55 111 Z"
-                    fill="rgb(233,240,242)"
-                    stroke="none"
-                    strokeWidth="1"
-                  />
-                </svg>
-                <span className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">
-                  Recursos Hidricos de SDE
-                </span>
+                  <img src={Logo} alt="Logo" width={64} height={64} />
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">
+                    Recursos Hidricos de SDE
+                  </h1>
+                </div>
               </div>
               <h1 className="text-2xl font-bold text-gray-900">
                 Iniciar Sesión
@@ -91,46 +97,51 @@ const LoginPage = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="correo">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <Input
-                    id="email"
+                    id="correo"
                     type="email"
                     placeholder="tu@email.com"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    className="pl-10"
+                    value={formData.correo}
+                    onChange={(e) => {
+                      setFormData({ ...formData, correo: e.target.value });
+                      if (errors.correo) setErrors({ ...errors, correo: "" });
+                    }}
+                    className={`pl-10 ${errors.correo ? "border-red-500" : ""}`}
                     required
                   />
                 </div>
+                {errors.correo && <p className="text-sm text-red-500">{errors.correo}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="contrasena">Contraseña</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <Input
-                    id="password"
+                    id="contrasena"
                     type="password"
                     placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
-                    className="pl-10"
+                    value={formData.contrasena}
+                    onChange={(e) => {
+                      setFormData({ ...formData, contrasena: e.target.value });
+                      if (errors.contrasena) setErrors({ ...errors, contrasena: "" });
+                    }}
+                    className={`pl-10 ${errors.contrasena ? "border-red-500" : ""}`}
                     required
                   />
                 </div>
+                {errors.contrasena && <p className="text-sm text-red-500">{errors.contrasena}</p>}
               </div>
 
               <Button
                 type="submit"
+                disabled={loading}
                 className="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700"
               >
-                Iniciar Sesión
+                {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Button>
             </form>
 
