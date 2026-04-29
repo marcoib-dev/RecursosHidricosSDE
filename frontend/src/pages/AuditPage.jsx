@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Search, ChevronLeft, ChevronRight, Filter, X, Activity, User, Clock, Globe } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { auditoriaAPI } from '../services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const ENTIDAD_LABELS = {
   obra: 'Obra',
@@ -38,6 +38,13 @@ const ROL_COLORS = {
 export default function AuditPage() {
   const { permisos } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const highlightId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const value = params.get('highlight');
+    return value ? Number(value) : null;
+  }, [location.search]);
 
   const [registros, setRegistros] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,6 +77,15 @@ export default function AuditPage() {
   useEffect(() => {
     loadAuditoria();
   }, [page, searchDebounced, filterEntidad]);
+
+  useEffect(() => {
+    if (!highlightId || loading || registros.length === 0) return;
+
+    const row = document.getElementById(`audit-row-${highlightId}`);
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightId, loading, registros]);
 
   const loadAuditoria = async () => {
     try {
@@ -195,10 +211,15 @@ export default function AuditPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {registros.map((reg, i) => {
+                  {registros.map((reg) => {
                     const ctx = parseContexto(reg.contexto);
+                    const isHighlighted = highlightId === reg.id;
                     return (
-                      <tr key={reg.id} className="hover:bg-gray-50/50 transition-colors">
+                      <tr
+                        id={`audit-row-${reg.id}`}
+                        key={reg.id}
+                        className={`transition-colors ${isHighlighted ? 'bg-cyan-50 ring-1 ring-cyan-200' : 'hover:bg-gray-50/50'}`}
+                      >
                         <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5 text-gray-400" />
@@ -229,8 +250,22 @@ export default function AuditPage() {
                           {ENTIDAD_LABELS[reg.entidad] || reg.entidad}
                           {reg.entidad_id && <span className="text-gray-400 ml-1">#{reg.entidad_id}</span>}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500 max-w-[200px] truncate">
-                          {ctx?.nombre || ctx?.correo || ctx?.filename || '—'}
+                        <td className="px-4 py-3 text-sm text-gray-500 max-w-[300px]">
+                          {reg.titulo === 'ACTUALIZAR_OBRA' && ctx?.cambios && Array.isArray(ctx.cambios) && ctx.cambios.length > 0 ? (
+                            <div className="space-y-1">
+                              {ctx.cambios.slice(0, 2).map((cambio, i) => (
+                                <div key={i} className="text-xs leading-4">
+                                  <span className="font-medium text-gray-700">{cambio.campo}:</span>
+                                  <span className="text-gray-500"> {cambio.anterior} → {cambio.nuevo}</span>
+                                </div>
+                              ))}
+                              {ctx.cambios.length > 2 && (
+                                <div className="text-xs text-gray-400">+{ctx.cambios.length - 2} más</div>
+                              )}
+                            </div>
+                          ) : (
+                            <>{ctx?.nombre || ctx?.correo || ctx?.filename || '—'}</>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
                           <div className="flex items-center gap-1">

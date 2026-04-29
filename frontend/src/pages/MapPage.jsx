@@ -9,6 +9,7 @@ import { obrasAPI } from '../services/api';
 
 // Colores por estado para los markers
 const ESTADO_COLORS = {
+  en_funcionamiento: '#22c55e',
   operativa: '#22c55e',
   en_construccion: '#f59e0b',
   en_reparacion: '#f97316',
@@ -17,37 +18,56 @@ const ESTADO_COLORS = {
 };
 
 const ESTADO_LABELS = {
-  operativa: 'Operativa',
   en_construccion: 'En construcción',
+  en_funcionamiento: 'En funcionamiento',
   en_reparacion: 'En reparación',
   fuera_de_servicio: 'Fuera de servicio',
-  planificada: 'Planificada',
 };
 
 const TIPO_LABELS = {
-  planta_potabilizadora: 'Planta Potabilizadora',
   pozo: 'Pozo',
-  acueducto: 'Acueducto',
-  cisterna: 'Cisterna',
-  represa: 'Represa',
-  canal: 'Canal',
-  otro: 'Otro',
+  planta: 'Planta',
 };
 
-// Crear icono SVG custom por color
-function createColoredIcon(color) {
+function normalizeTipo(tipo) {
+  const normalized = String(tipo || '').toLowerCase();
+  if (normalized === 'planta_potabilizadora') return 'planta';
+  return normalized;
+}
+
+// Crear icono SVG custom por color y tipo
+function createColoredIcon(color, tipo = 'otro') {
+  const normalizedType = normalizeTipo(tipo);
+  const isPozo = normalizedType.includes('pozo');
+  const iconColor = isPozo ? '#38bdf8' : '#22c55e';
+  const iconSvg = isPozo
+    ? `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
+        <path d="M12 2C8.5 6 6 9.2 6 12.5A6 6 0 0 0 18 12.5C18 9.2 15.5 6 12 2Z" fill="#fff" stroke="${iconColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M8.5 13.5c.6 1.4 1.8 2.2 3.5 2.2s2.9-.8 3.5-2.2" fill="none" stroke="${iconColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    `
+    : `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
+        <rect x="5" y="9" width="14" height="8" rx="1.5" fill="#fff" stroke="${iconColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M7 9V6h7l3 3" fill="#fff" stroke="${iconColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M8 12h8" fill="none" stroke="${iconColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M8 15h8" fill="none" stroke="${iconColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    `;
   const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="28" height="42">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="30" height="44">
       <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
-      <circle cx="12" cy="12" r="5" fill="#fff"/>
+      <circle cx="12" cy="12" r="6.6" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.65)" stroke-width="0.8"/>
+      <g transform="translate(4 4)">${iconSvg}</g>
     </svg>
   `;
   return L.divIcon({
     html: svg,
     className: '',
-    iconSize: [28, 42],
-    iconAnchor: [14, 42],
-    popupAnchor: [0, -42],
+    iconSize: [30, 44],
+    iconAnchor: [15, 44],
+    popupAnchor: [0, -44],
   });
 }
 
@@ -95,7 +115,7 @@ export default function MapPage() {
     return obras.filter((o) => {
       if (!o.latitud || !o.longitud) return false;
       if (filterEstado !== 'all' && o.estado !== filterEstado) return false;
-      if (filterTipo !== 'all' && o.tipo !== filterTipo) return false;
+      if (filterTipo !== 'all' && normalizeTipo(o.tipo) !== filterTipo) return false;
       return true;
     });
   }, [obras, filterEstado, filterTipo]);
@@ -217,7 +237,7 @@ export default function MapPage() {
                 <Marker
                   key={obra.id}
                   position={[parseFloat(obra.latitud), parseFloat(obra.longitud)]}
-                  icon={createColoredIcon(ESTADO_COLORS[obra.estado] || '#6b7280')}
+                  icon={createColoredIcon(ESTADO_COLORS[obra.estado] || '#6b7280', obra.tipo)}
                 >
                   <Popup maxWidth={280}>
                     <div className="min-w-[200px]">
@@ -270,11 +290,13 @@ export default function MapPage() {
 
           {/* Leyenda */}
           <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur rounded-lg shadow-lg border border-gray-200 p-3 z-[1000]">
-            <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
-              <Droplets className="w-3.5 h-3.5" /> Leyenda
-            </p>
             <div className="space-y-1">
-              {Object.entries(ESTADO_LABELS).map(([key, label]) => (
+              {[
+                ['en_funcionamiento', 'En funcionamiento'],
+                ['en_construccion', 'En construcción'],
+                ['en_reparacion', 'En reparación'],
+                ['fuera_de_servicio', 'Fuera de servicio'],
+              ].map(([key, label]) => (
                 <div key={key} className="flex items-center gap-2 text-xs text-gray-600">
                   <span
                     className="w-3 h-3 rounded-full border border-white shadow-sm flex-shrink-0"

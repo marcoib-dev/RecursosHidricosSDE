@@ -46,6 +46,14 @@ const Dashboard = () => {
     loadData();
   }, [permisos]);
 
+  const handleStatClick = (estado) => {
+    if (estado === 'total') {
+      navigate('/plantas');
+    } else {
+      navigate(`/plantas?estado=${estado}`);
+    }
+  };
+
   const statCards = stats ? [
     {
       title: "Total de Obras",
@@ -53,6 +61,7 @@ const Dashboard = () => {
       icon: <Droplets className="w-6 h-6" />,
       color: "from-cyan-500 to-blue-500",
       bgColor: "bg-cyan-50",
+      estado: 'total',
     },
     {
       title: "En Funcionamiento",
@@ -60,6 +69,15 @@ const Dashboard = () => {
       icon: <CheckCircle className="w-6 h-6" />,
       color: "from-green-500 to-emerald-500",
       bgColor: "bg-green-50",
+      estado: 'en_funcionamiento',
+    },
+    {
+      title: "En Reparación",
+      value: stats.enReparacion,
+      icon: <Wrench className="w-6 h-6" />,
+      color: "from-orange-500 to-yellow-500",
+      bgColor: "bg-orange-50",
+      estado: 'en_reparacion',
     },
     {
       title: "En Construcción",
@@ -67,6 +85,7 @@ const Dashboard = () => {
       icon: <HardHat className="w-6 h-6" />,
       color: "from-yellow-500 to-orange-500",
       bgColor: "bg-yellow-50",
+      estado: 'en_construccion',
     },
     {
       title: "Fuera de Servicio",
@@ -74,6 +93,7 @@ const Dashboard = () => {
       icon: <AlertTriangle className="w-6 h-6" />,
       color: "from-red-500 to-pink-500",
       bgColor: "bg-red-50",
+      estado: 'fuera_de_servicio',
     },
   ] : [];
 
@@ -114,7 +134,10 @@ const Dashboard = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.1 }}
                   >
-                    <StatsCard {...stat} />
+                    <StatsCard 
+                      {...stat}
+                      onClick={() => handleStatClick(stat.estado)}
+                    />
                   </motion.div>
                 ))}
               </div>

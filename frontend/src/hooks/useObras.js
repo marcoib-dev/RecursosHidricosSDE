@@ -6,6 +6,10 @@ const useObras = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const notifyObrasChanged = useCallback(() => {
+    window.dispatchEvent(new Event('obra:changed'));
+  }, []);
+
   const loadObras = useCallback(async (params = {}) => {
     try {
       setLoading(true);
@@ -29,31 +33,34 @@ const useObras = () => {
     try {
       const data = await obrasAPI.create(obraData);
       await loadObras(); // Recargar lista
+      notifyObrasChanged();
       return { success: true, obra: data.obra };
     } catch (err) {
       return { success: false, error: err.message };
     }
-  }, [loadObras]);
+  }, [loadObras, notifyObrasChanged]);
 
   const updateObra = useCallback(async (obraId, obraData) => {
     try {
       const data = await obrasAPI.update(obraId, obraData);
       await loadObras();
+      notifyObrasChanged();
       return { success: true, obra: data.obra };
     } catch (err) {
       return { success: false, error: err.message };
     }
-  }, [loadObras]);
+  }, [loadObras, notifyObrasChanged]);
 
   const deleteObra = useCallback(async (obraId) => {
     try {
       await obrasAPI.delete(obraId);
       await loadObras();
+      notifyObrasChanged();
       return { success: true };
     } catch (err) {
       return { success: false, error: err.message };
     }
-  }, [loadObras]);
+  }, [loadObras, notifyObrasChanged]);
 
   const getObra = useCallback(async (obraId) => {
     try {

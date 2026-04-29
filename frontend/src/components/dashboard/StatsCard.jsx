@@ -1,9 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const StatsCard = ({ title, value, icon, color, bgColor }) => {
+const StatsCard = ({ title, value, icon, color, bgColor, onClick }) => {
   return (
-    <div className={`${bgColor} rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow duration-300`}>
+    <motion.button
+      whileHover={{ y: -2 }}
+      onClick={onClick}
+      className={`${bgColor} rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300 cursor-pointer w-full text-left`}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
@@ -13,7 +17,7 @@ const StatsCard = ({ title, value, icon, color, bgColor }) => {
           {icon}
         </div>
       </div>
-    </div>
+    </motion.button>
   );
 };
 

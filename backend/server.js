@@ -22,7 +22,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'recursos-hidricos-sde-secret';
 // ─── Middlewares ──────────────────────────────────────
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ],
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -489,31 +493,108 @@ app.get('/api/auditoria', authenticateToken, loadUser, async (req, res) => {
   }
 });
 
-// Notificaciones: obras con problemas
+// Notificaciones: cambios recientes en obras
 app.get('/api/notificaciones', authenticateToken, async (_req, res) => {
   try {
-    const [[fueraServicio], [enReparacion], [actividadReciente]] = await Promise.all([
-      pool.query("SELECT COUNT(*) as count FROM obras WHERE estado = 'fuera_de_servicio'"),
-      pool.query("SELECT COUNT(*) as count FROM obras WHERE estado = 'en_reparacion'"),
-      pool.query("SELECT COUNT(*) as count FROM auditoria WHERE fecha > DATE_SUB(NOW(), INTERVAL 24 HOUR)"),
-    ]);
-
     const alertas = [];
-    if (fueraServicio[0].count > 0) {
-      alertas.push({ tipo: 'danger', mensaje: `${fueraServicio[0].count} obra(s) fuera de servicio`, icono: 'alert-triangle' });
-    }
-    if (enReparacion[0].count > 0) {
-      alertas.push({ tipo: 'warning', mensaje: `${enReparacion[0].count} obra(s) en reparación`, icono: 'wrench' });
-    }
-    if (actividadReciente[0].count > 0) {
-      alertas.push({ tipo: 'info', mensaje: `${actividadReciente[0].count} acción(es) en las últimas 24hs`, icono: 'activity' });
-    }
+    const actividadObras = await pool.query(
+      `SELECT a.id, a.titulo, a.contexto, a.fecha, a.entidad_id,
+              u.nombre as usuario_nombre, u.apellido as usuario_apellido
+       FROM auditoria a
+       LEFT JOIN usuarios u ON a.usuario_id = u.id
+       WHERE a.entidad = 'obra'
+         AND a.titulo IN ('CREAR_OBRA', 'ACTUALIZAR_OBRA', 'ELIMINAR_OBRA')
+         AND a.fecha > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+       ORDER BY a.fecha ASC
+       LIMIT 10`
+    );
+
+    (actividadObras[0] || []).forEach((evento) => {
+      let contexto = {};
+      try {
+        contexto = evento.contexto ? JSON.parse(evento.contexto) : {};
+      } catch (_error) {
+        contexto = {};
+      }
+
+      const nombreObra = contexto.nombre || `obra ${evento.entidad_id}`;
+      const usuario = [evento.usuario_nombre, evento.usuario_apellido].filter(Boolean).join(' ') || 'Sistema';
+      const fechaEvento = new Date(evento.fecha).toLocaleString('es-DO', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      });
+
+      let tipo = 'info';
+      let titulo = 'Obra actualizada';
+      let detalle = 'Se registró un cambio en la obra';
+
+      if (evento.titulo === 'CREAR_OBRA') {
+        tipo = 'success';
+        titulo = 'Obra creada';
+        detalle = 'Se agregó una nueva obra al sistema';
+      } else if (evento.titulo === 'ELIMINAR_OBRA') {
+        tipo = 'danger';
+        titulo = 'Obra eliminada';
+        detalle = 'La obra fue eliminada del registro';
+      } else if (evento.titulo === 'ACTUALIZAR_OBRA') {
+        const estadoLabel = {
+          en_funcionamiento: 'En Funcionamiento',
+          en_reparacion: 'En Reparación',
+          fuera_de_servicio: 'Fuera de Servicio',
+          en_construccion: 'En Construcción',
+          en_estudio: 'En Estudio',
+        };
+
+        const cambios = Array.isArray(contexto.cambios) ? contexto.cambios : [];
+        const cambiosDescripcion = cambios.map((cambio) => {
+          const nombreCampo = {
+            estado: 'estado',
+            porcentaje_avance: 'avance',
+            nombre: 'nombre',
+            ubicacion: 'ubicación',
+            responsable: 'responsable',
+            empresa: 'empresa',
+            localidad: 'localidad',
+          }[cambio.campo] || cambio.campo;
+
+          if (cambio.campo === 'estado') {
+            return `${nombreCampo} de ${cambio.anterior} a ${cambio.nuevo}`;
+          }
+
+          if (cambio.campo === 'porcentaje_avance') {
+            return `${nombreCampo} de ${cambio.anterior} a ${cambio.nuevo}`;
+          }
+
+          return `${nombreCampo} de ${cambio.anterior} a ${cambio.nuevo}`;
+        });
+
+        if (cambiosDescripcion.length > 0) {
+          detalle = `Se modificó ${cambiosDescripcion.join(' · ')}`;
+        } else if (contexto.resumen?.estado || contexto.resumen?.porcentaje_avance !== undefined) {
+          const estado = contexto.resumen?.estado ? `estado a ${contexto.resumen.estado}` : null;
+          const avance = contexto.resumen?.porcentaje_avance !== undefined ? `avance a ${contexto.resumen.porcentaje_avance}%` : null;
+          detalle = `Se actualizó ${[estado, avance].filter(Boolean).join(' y ')}`;
+        } else if (contexto.body?.nombre) {
+          detalle = `Se actualizó la información de ${contexto.body.nombre}`;
+        } else {
+          detalle = 'Se actualizó la información de la obra';
+        }
+      }
+
+      alertas.push({
+        id: evento.id,
+        tipo,
+        titulo,
+        mensaje: `${titulo}: ${nombreObra}`,
+        detalle: `${detalle} · ${usuario} · ${fechaEvento}`,
+        obraId: evento.entidad_id,
+        fecha: evento.fecha,
+      });
+    });
 
     res.json({
       alertas,
-      totalAlertas: alertas.filter(a => a.tipo === 'danger' || a.tipo === 'warning').length,
-      fueraDeServicio: parseInt(fueraServicio[0].count),
-      enReparacion: parseInt(enReparacion[0].count),
+      totalAlertas: alertas.length,
     });
   } catch (err) {
     console.error('Error en notificaciones:', err);
@@ -709,6 +790,12 @@ app.put('/api/obras/:id', authenticateToken, loadUser, async (req, res) => {
     }
   }
 
+  const [existingRows] = await pool.query('SELECT * FROM obras WHERE id = ?', [req.params.id]);
+  if (existingRows.length === 0) {
+    return res.status(404).json({ error: 'Obra no encontrada' });
+  }
+  const existingObra = existingRows[0];
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -754,7 +841,44 @@ app.put('/api/obras/:id', authenticateToken, loadUser, async (req, res) => {
 
     const [updated] = await pool.query('SELECT * FROM obras WHERE id = ?', [req.params.id]);
 
-    auditLog(req.userInfo.id, 'ACTUALIZAR_OBRA', 'obra', req.params.id, req.ip, { nombre });
+    const estadoLabels = {
+      en_funcionamiento: 'En Funcionamiento',
+      en_reparacion: 'En Reparación',
+      fuera_de_servicio: 'Fuera de Servicio',
+      en_construccion: 'En Construcción',
+      en_estudio: 'En Estudio',
+    };
+
+    const cambios = [];
+    const addCambio = (campo, anterior, nuevo, formatter = (value) => value) => {
+      const previousValue = formatter(anterior);
+      const nextValue = formatter(nuevo);
+      if (previousValue !== nextValue) {
+        cambios.push({ campo, anterior: previousValue, nuevo: nextValue });
+      }
+    };
+
+    addCambio('nombre', existingObra.nombre, nombre);
+    addCambio('ubicacion', existingObra.ubicacion, ubicacion);
+    addCambio('empresa', existingObra.empresa, empresa || null);
+    addCambio('responsable', existingObra.responsable, responsable);
+    addCambio('estado', existingObra.estado, estado, (value) => estadoLabels[value] || value || '');
+    addCambio('anio', existingObra.anio, anio || null, (value) => (value === null || value === undefined || value === '' ? '—' : String(value)));
+    addCambio('latitud', existingObra.latitud, latitud || null, (value) => (value === null || value === undefined || value === '' ? '—' : String(value)));
+    addCambio('longitud', existingObra.longitud, longitud || null, (value) => (value === null || value === undefined || value === '' ? '—' : String(value)));
+    addCambio('descripción', existingObra.descripcion, descripcion || null, (value) => value || '—');
+    addCambio('porcentaje_avance', existingObra.porcentaje_avance, porcentaje_avance ?? 100, (value) => `${value ?? '—'}%`);
+    addCambio('localidad', existingObra.localidad, localidad || null, (value) => value || '—');
+
+    auditLog(req.userInfo.id, 'ACTUALIZAR_OBRA', 'obra', req.params.id, req.ip, {
+      antes: existingObra,
+      despues: updated[0],
+      cambios,
+      resumen: {
+        estado: estadoLabels[estado] || estado,
+        porcentaje_avance: porcentaje_avance ?? 100,
+      },
+    });
 
     res.json({ obra: updated[0] });
   } catch (err) {

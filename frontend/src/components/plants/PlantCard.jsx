@@ -12,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { MapPin, User, Building2, Edit, Trash2 } from 'lucide-react';
+import { MapPin, User, Building2, Edit, Trash2, Droplet, Waves } from 'lucide-react';
 
 const ESTADO_LABELS = {
   en_funcionamiento: 'En Funcionamiento',
@@ -39,9 +39,25 @@ const PlantCard = ({ plant, onEdit, onDelete, onClick }) => {
     finalizada: 'bg-gray-100 text-gray-800 border-gray-200',
   };
 
-  const tipoColors = {
-    pozo: 'from-cyan-500 to-blue-500',
-    planta: 'from-teal-500 to-emerald-500',
+  // Colores de fondo para las tarjetas según estado
+  const backgroundColors = {
+    en_funcionamiento: 'from-green-500 to-emerald-600',
+    en_reparacion: 'from-amber-500 to-orange-600',
+    fuera_de_servicio: 'from-red-500 to-rose-600',
+    en_construccion: 'from-blue-500 to-cyan-600',
+    en_estudio: 'from-purple-500 to-indigo-600',
+    operativa: 'from-green-500 to-emerald-600',
+    suspendida: 'from-amber-500 to-orange-600',
+    finalizada: 'from-gray-500 to-slate-600',
+  };
+
+  // Icono según tipo de obra
+  const getIconForType = () => {
+    return plant.tipo === 'pozo' ? (
+      <Droplet className="w-12 h-12 mx-auto opacity-70" />
+    ) : (
+      <Waves className="w-12 h-12 mx-auto opacity-70" />
+    );
   };
 
   return (
@@ -50,11 +66,11 @@ const PlantCard = ({ plant, onEdit, onDelete, onClick }) => {
       className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
       onClick={onClick}
     >
-      <div className={`h-48 bg-gradient-to-br ${tipoColors[plant.tipo] || 'from-cyan-500 to-teal-500'} relative overflow-hidden`}>
-        <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+      <div className={`h-48 bg-gradient-to-br ${backgroundColors[plant.estado] || 'from-cyan-500 to-blue-600'} relative overflow-hidden`}>
+        <div className="absolute inset-0 bg-black bg-opacity-15 flex items-center justify-center">
           <div className="text-center text-white">
-            <Building2 className="w-12 h-12 mx-auto opacity-50" />
-            <p className="text-sm mt-2 opacity-75 capitalize">{plant.tipo}</p>
+            {getIconForType()}
+            <p className="text-sm mt-2 opacity-75 capitalize font-medium">{plant.tipo}</p>
           </div>
         </div>
         <Badge className={`absolute top-4 right-4 ${statusColors[plant.estado] || 'bg-gray-100 text-gray-800'}`}>

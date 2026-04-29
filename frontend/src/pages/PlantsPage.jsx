@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PlantCard from "@/components/plants/PlantCard";
 import PlantDialog from "@/components/plants/PlantDialog";
@@ -23,12 +23,13 @@ import { Plus, Search, Droplets, Download } from "lucide-react";
 
 const PlantsPage = () => {
   const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user, permisos } = useAuth();
   const { obras, loading, addObra, updateObra, deleteObra } = useObras();
   const [filteredObras, setFilteredObras] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('estado') || "all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingObra, setEditingObra] = useState(null);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRolLabel } from "@/lib/permissions";
@@ -13,31 +13,80 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LayoutDashboard, Droplet, Menu, X, LogOut, Users, ShieldCheck, MapPin, User, Shield, Bell, AlertTriangle } from "lucide-react";
+import { LayoutDashboard, Droplet, Menu, X, LogOut, Users, ShieldCheck, MapPin, User, Shield, Bell, AlertTriangle, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Logo from "../icons/logo.svg";
+
+const SEEN_NOTIFICATION_KEY = 'dashboard:seenNotificationIds';
 
 const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, permisos, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [totalAlertas, setTotalAlertas] = useState(0);
+  const [notificaciones, setNotificaciones] = useState([]);
+  const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
+  const [seenNotificationIds, setSeenNotificationIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(SEEN_NOTIFICATION_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  });
 
-  // Cargar notificaciones
+  const loadNotifs = useCallback(async () => {
+    try {
+      const data = await notificacionesAPI.get();
+      const alertas = data.alertas || [];
+      const storedSeenIds = new Set(seenNotificationIds.map((id) => String(id)));
+      const filtered = alertas.filter((alert) => !storedSeenIds.has(String(alert.id)));
+      setNotificaciones(filtered);
+    } catch (e) {
+      // silencioso
+    }
+  }, [seenNotificationIds]);
+
+  const seenNotificationSet = useMemo(() => new Set(seenNotificationIds.map((id) => String(id))), [seenNotificationIds]);
+  const unreadNotifications = notificaciones.filter((notificacion) => !seenNotificationSet.has(String(notificacion.id)));
+  const totalAlertas = unreadNotifications.length;
+
+  const markNotificationAsSeen = useCallback((notificationId) => {
+    const nextSeenIds = Array.from(new Set([...seenNotificationIds, String(notificationId)]));
+    setSeenNotificationIds(nextSeenIds);
+    localStorage.setItem(SEEN_NOTIFICATION_KEY, JSON.stringify(nextSeenIds));
+  }, [seenNotificationIds]);
+
+  // Actualizar notificaciones cuando cambian las vistas
   useEffect(() => {
-    const loadNotifs = async () => {
-      try {
-        const data = await notificacionesAPI.get();
-        setTotalAlertas(data.totalAlertas || 0);
-      } catch (e) {
-        // silencioso
-      }
-    };
     loadNotifs();
+  }, [seenNotificationIds]);
+
+  // Cargar notificaciones al montar y cada 60s
+  useEffect(() => {
     const interval = setInterval(loadNotifs, 60000); // cada 60s
     return () => clearInterval(interval);
-  }, []);
+  }, [loadNotifs]);
+
+  useEffect(() => {
+    const handleObraChange = () => {
+      loadNotifs();
+    };
+
+    window.addEventListener('obra:changed', handleObraChange);
+    return () => window.removeEventListener('obra:changed', handleObraChange);
+  }, [loadNotifs]);
+
+  const toggleNotifications = () => {
+    setNotificacionesAbiertas((value) => {
+      return !value;
+    });
+  };
+
+  const handleNotificationClick = (notificacion) => {
+    markNotificationAsSeen(notificacion.id);
+    navigate(`/auditoria?highlight=${notificacion.id}`);
+    setNotificacionesAbiertas(false);
+  };
 
   // Menú dinámico según permisos
   const menuItems = [
@@ -52,8 +101,6 @@ const DashboardLayout = ({ children }) => {
       label: "Obras",
       path: "/plantas",
       visible: true,
-      badge: totalAlertas > 0 ? totalAlertas : null,
-      badgeColor: 'bg-red-500',
     },
     {
       icon: <MapPin className="w-5 h-5" />,
@@ -125,18 +172,96 @@ const DashboardLayout = ({ children }) => {
 
             <div className="flex items-center space-x-4">
               {/* Notification bell */}
-              {totalAlertas > 0 && (
+              <div className="relative">
                 <button
-                  onClick={() => navigate('/plantas')}
+                  onClick={toggleNotifications}
                   className="relative p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                   title={`${totalAlertas} alerta(s)`}
                 >
                   <Bell className="w-5 h-5" />
-                  <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full">
-                    {totalAlertas}
-                  </span>
+                  {!notificacionesAbiertas && totalAlertas > 0 && (
+                    <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full">
+                      {totalAlertas}
+                    </span>
+                  )}
                 </button>
-              )}
+
+                <AnimatePresence>
+                  {notificacionesAbiertas && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                      transition={{ duration: 0.18 }}
+                      className="absolute right-0 top-full mt-3 w-96 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl z-50"
+                    >
+                      <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-4 py-3">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">Notificaciones</p>
+                          <p className="text-xs text-gray-500">
+                              {unreadNotifications.length > 0
+                                ? `${unreadNotifications.length} alerta(s) sin leer`
+                              : 'No hay notificaciones nuevas'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setNotificacionesAbiertas(false)}
+                          className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                          aria-label="Cerrar notificaciones"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="max-h-96 overflow-y-auto">
+                        {unreadNotifications.length === 0 ? (
+                          <div className="px-4 py-8 text-center text-sm text-gray-500">
+                            Todo está al día por ahora.
+                          </div>
+                        ) : (
+                          unreadNotifications.map((notificacion, index) => {
+                            const iconoPorTipo = {
+                              danger: AlertTriangle,
+                              warning: AlertTriangle,
+                              success: CheckCircle,
+                              info: Bell,
+                            };
+                            const Icono = iconoPorTipo[notificacion.tipo] || Bell;
+                            const fondoPorTipo = {
+                              danger: 'bg-red-50 text-red-600',
+                              warning: 'bg-amber-50 text-amber-600',
+                              success: 'bg-emerald-50 text-emerald-600',
+                              info: 'bg-cyan-50 text-cyan-600',
+                            };
+
+                            const isUnread = !seenNotificationSet.has(String(notificacion.id));
+
+                            return (
+                              <button
+                                key={`${notificacion.id}-${index}`}
+                                type="button"
+                                onClick={() => handleNotificationClick(notificacion)}
+                                className={`flex w-full gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-gray-50 ${isUnread ? 'bg-cyan-50/40' : ''}`}
+                              >
+                                <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${fondoPorTipo[notificacion.tipo] || 'bg-gray-100 text-gray-600'}`}>
+                                  <Icono className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-semibold text-gray-900">{notificacion.titulo}</p>
+                                  <p className="text-sm text-gray-600">{notificacion.mensaje}</p>
+                                  {notificacion.detalle && (
+                                    <p className="mt-1 text-xs leading-5 text-gray-500">{notificacion.detalle}</p>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
