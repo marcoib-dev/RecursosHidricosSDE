@@ -2,7 +2,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
-import crypto from 'crypto';
 import { pool, query } from './connection.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,29 +14,28 @@ async function seed() {
 
     // ─── Crear usuario administrador ─────────────────
     const adminPass = await bcrypt.hash('admin123', 12);
-    const adminId = crypto.randomUUID();
     await pool.query(
-      `INSERT IGNORE INTO usuarios (id, nombre, apellido, correo, contrasena, rol)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [adminId, 'Carlos', 'Administrador', 'admin@recursoshidricos.gob.ar', adminPass, 'administrador']
+      `INSERT IGNORE INTO usuarios (nombre, apellido, correo, contrasena, rol)
+       VALUES (?, ?, ?, ?, ?)`,
+      ['Carlos', 'Administrador', 'admin@recursoshidricos.gob.ar', adminPass, 'administrador']
     );
     console.log('✅ Administrador: admin@recursoshidricos.gob.ar / admin123');
 
     // ─── Crear presidente ────────────────────────────
     const presPass = await bcrypt.hash('presidente123', 12);
     await pool.query(
-      `INSERT IGNORE INTO usuarios (id, nombre, apellido, correo, contrasena, rol)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [crypto.randomUUID(), 'Roberto', 'Pérez', 'presidente@recursoshidricos.gob.ar', presPass, 'presidente']
+      `INSERT IGNORE INTO usuarios (nombre, apellido, correo, contrasena, rol)
+       VALUES (?, ?, ?, ?, ?)`,
+      ['Roberto', 'Pérez', 'presidente@recursoshidricos.gob.ar', presPass, 'presidente']
     );
     console.log('✅ Presidente: presidente@recursoshidricos.gob.ar / presidente123');
 
     // ─── Crear inspector ─────────────────────────────
     const inspPass = await bcrypt.hash('inspector123', 12);
     await pool.query(
-      `INSERT IGNORE INTO usuarios (id, nombre, apellido, correo, contrasena, rol)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [crypto.randomUUID(), 'María', 'López', 'inspector@recursoshidricos.gob.ar', inspPass, 'inspector']
+      `INSERT IGNORE INTO usuarios (nombre, apellido, correo, contrasena, rol)
+       VALUES (?, ?, ?, ?, ?)`,
+      ['María', 'López', 'inspector@recursoshidricos.gob.ar', inspPass, 'inspector']
     );
     console.log('✅ Inspector: inspector@recursoshidricos.gob.ar / inspector123');
 
@@ -51,9 +49,9 @@ async function seed() {
 
     for (const d of deptos) {
       await pool.query(
-        `INSERT IGNORE INTO usuarios (id, nombre, apellido, correo, contrasena, rol)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [crypto.randomUUID(), d.nombre, d.apellido, d.correo, deptPass, d.rol]
+        `INSERT IGNORE INTO usuarios (nombre, apellido, correo, contrasena, rol)
+         VALUES (?, ?, ?, ?, ?)`,
+        [d.nombre, d.apellido, d.correo, deptPass, d.rol]
       );
       console.log(`✅ ${d.rol}: ${d.correo} / depto123`);
     }
@@ -165,13 +163,13 @@ async function seed() {
     ];
 
     for (const obra of obras) {
-      const obraId = crypto.randomUUID();
-
       await pool.query(
-        `INSERT INTO obras (id, tipo, nombre, ubicacion, empresa, responsable, estado, anio, latitud, longitud, descripcion, porcentaje_avance, localidad, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [obraId, obra.tipo, obra.nombre, obra.ubicacion, obra.empresa, obra.responsable, obra.estado, obra.anio, obra.lat, obra.lng, obra.desc, obra.avance, obra.localidad, userId]
+        `INSERT INTO obras (tipo, nombre, ubicacion, empresa, responsable, estado, anio, latitud, longitud, descripcion, porcentaje_avance, localidad, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [obra.tipo, obra.nombre, obra.ubicacion, obra.empresa, obra.responsable, obra.estado, obra.anio, obra.lat, obra.lng, obra.desc, obra.avance, obra.localidad, userId]
       );
+      const [inserted] = await pool.query('SELECT LAST_INSERT_ID() AS id');
+      const obraId = inserted[0].id;
 
       // Insertar datos específicos según tipo
       if (obra.tipo === 'pozo') {

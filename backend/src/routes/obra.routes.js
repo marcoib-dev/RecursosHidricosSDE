@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import crypto from 'crypto';
 import { query, pool } from '../database/connection.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -144,13 +143,12 @@ router.post(
         tratamiento, capacidad, fuente,
       } = req.body;
 
-      const id = crypto.randomUUID();
-
-      await conn.query(
-        `INSERT INTO obras (id, tipo, nombre, ubicacion, empresa, responsable, estado, anio, latitud, longitud, descripcion, porcentaje_avance, localidad, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, tipo, nombre, ubicacion, empresa || null, responsable, estado, anio || null, latitud || null, longitud || null, descripcion || null, porcentaje_avance ?? 100, localidad || null, req.user.id]
+      const [insertResult] = await conn.query(
+        `INSERT INTO obras (tipo, nombre, ubicacion, empresa, responsable, estado, anio, latitud, longitud, descripcion, porcentaje_avance, localidad, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [tipo, nombre, ubicacion, empresa || null, responsable, estado, anio || null, latitud || null, longitud || null, descripcion || null, porcentaje_avance ?? 100, localidad || null, req.user.id]
       );
+      const id = insertResult.insertId;
 
       // Insertar datos específicos según tipo
       if (tipo === 'pozo') {

@@ -33,7 +33,7 @@ async function initDatabase() {
     // Roles del TP: administrador, presidente, inspector, dpto_construccion, dpto_estudios, dpto_conservacion
     await connection.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
-        id            CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+        id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
         nombre        VARCHAR(255) NOT NULL,
         apellido      VARCHAR(255) NOT NULL,
         correo        VARCHAR(255) UNIQUE NOT NULL,
@@ -51,7 +51,7 @@ async function initDatabase() {
     // + campos extra: latitud, longitud, descripción, porcentaje_avance
     await connection.query(`
       CREATE TABLE IF NOT EXISTS obras (
-        id                  CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+        id                  INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
         tipo                ENUM('pozo', 'planta') NOT NULL,
         nombre              VARCHAR(255) NOT NULL,
         ubicacion           VARCHAR(500) NOT NULL,
@@ -64,7 +64,7 @@ async function initDatabase() {
         descripcion         TEXT,
         porcentaje_avance   INT DEFAULT 100,
         localidad           VARCHAR(255),
-        created_by          CHAR(36),
+        created_by          INT UNSIGNED,
         created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (created_by) REFERENCES usuarios(id) ON DELETE SET NULL
@@ -76,7 +76,7 @@ async function initDatabase() {
     // Campos ER: profundidad, caudal, tipo_bomba, contaminantes
     await connection.query(`
       CREATE TABLE IF NOT EXISTS pozos (
-        id              CHAR(36) PRIMARY KEY,
+        id              INT UNSIGNED PRIMARY KEY,
         profundidad     DECIMAL(10, 2),
         caudal          DECIMAL(10, 2),
         tipo_bomba      VARCHAR(255),
@@ -90,7 +90,7 @@ async function initDatabase() {
     // Campos ER: tratamiento, capacidad, fuente
     await connection.query(`
       CREATE TABLE IF NOT EXISTS plantas (
-        id              CHAR(36) PRIMARY KEY,
+        id              INT UNSIGNED PRIMARY KEY,
         tratamiento     VARCHAR(255),
         capacidad       VARCHAR(255),
         fuente          VARCHAR(255),
@@ -103,12 +103,12 @@ async function initDatabase() {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS archivos_obra (
         id              CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-        obra_id         CHAR(36) NOT NULL,
+        obra_id         INT UNSIGNED NOT NULL,
         nombre_original VARCHAR(500) NOT NULL,
         nombre_guardado VARCHAR(500) NOT NULL,
         mime_type       VARCHAR(100),
         tamano          BIGINT,
-        subido_por      CHAR(36),
+        subido_por      INT UNSIGNED,
         created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (obra_id) REFERENCES obras(id) ON DELETE CASCADE,
         FOREIGN KEY (subido_por) REFERENCES usuarios(id) ON DELETE SET NULL
@@ -121,12 +121,12 @@ async function initDatabase() {
     // + user_id, entidad, entidad_id, ip para trazabilidad completa
     await connection.query(`
       CREATE TABLE IF NOT EXISTS auditoria (
-        id            CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-        usuario_id    CHAR(36),
+        id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        usuario_id    INT UNSIGNED,
         titulo        VARCHAR(255) NOT NULL,
         contexto      TEXT,
         entidad       VARCHAR(100),
-        entidad_id    CHAR(36),
+        entidad_id    VARCHAR(64),
         ip_address    VARCHAR(45),
         fecha         DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL

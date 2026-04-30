@@ -283,19 +283,18 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(contrasena, 12);
-    const id = crypto.randomUUID();
 
     await pool.query(
-      'INSERT INTO usuarios (id, nombre, apellido, correo, contrasena, rol) VALUES (?, ?, ?, ?, ?, ?)',
-      [id, nombre, apellido, correo, hashedPassword, rol]
+      'INSERT INTO usuarios (nombre, apellido, correo, contrasena, rol) VALUES (?, ?, ?, ?, ?)',
+      [nombre, apellido, correo, hashedPassword, rol]
     );
 
     const [newUser] = await pool.query(
-      'SELECT id, nombre, apellido, correo, rol, created_at FROM usuarios WHERE id = ?',
-      [id]
+      'SELECT id, nombre, apellido, correo, rol, created_at FROM usuarios WHERE correo = ?',
+      [correo]
     );
 
-    auditLog(id, 'CREAR_USUARIO', 'usuario', id, req.ip, { correo, rol });
+    auditLog(newUser[0].id, 'CREAR_USUARIO', 'usuario', newUser[0].id, req.ip, { correo, rol });
 
     res.status(201).json({ message: 'Usuario creado exitosamente', user: newUser[0] });
   } catch (err) {
@@ -736,13 +735,12 @@ app.post('/api/obras', authenticateToken, loadUser, async (req, res) => {
       return res.status(400).json({ error: 'Tipo, nombre, ubicación, responsable y estado son requeridos' });
     }
 
-    const id = crypto.randomUUID();
-
-    await conn.query(
-      `INSERT INTO obras (id, tipo, nombre, ubicacion, empresa, responsable, estado, anio, latitud, longitud, descripcion, porcentaje_avance, localidad, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, tipo, nombre, ubicacion, empresa || null, responsable, estado, anio || null, latitud || null, longitud || null, descripcion || null, porcentaje_avance ?? 100, localidad || null, req.userInfo.id]
+    const [insertResult] = await conn.query(
+      `INSERT INTO obras (tipo, nombre, ubicacion, empresa, responsable, estado, anio, latitud, longitud, descripcion, porcentaje_avance, localidad, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [tipo, nombre, ubicacion, empresa || null, responsable, estado, anio || null, latitud || null, longitud || null, descripcion || null, porcentaje_avance ?? 100, localidad || null, req.userInfo.id]
     );
+    const id = insertResult.insertId;
 
     if (tipo === 'pozo') {
       await conn.query(

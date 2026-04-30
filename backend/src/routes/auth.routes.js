@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
 import { query } from '../database/connection.js';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -37,17 +36,16 @@ router.post(
       }
 
       const hashedPassword = await bcrypt.hash(contrasena, 12);
-      const id = crypto.randomUUID();
 
       await query(
-        `INSERT INTO usuarios (id, nombre, apellido, correo, contrasena, rol)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [id, nombre, apellido, correo, hashedPassword, rol]
+        `INSERT INTO usuarios (nombre, apellido, correo, contrasena, rol)
+         VALUES (?, ?, ?, ?, ?)`,
+        [nombre, apellido, correo, hashedPassword, rol]
       );
 
       const [user] = await query(
-        'SELECT id, nombre, apellido, correo, rol, created_at FROM usuarios WHERE id = ?',
-        [id]
+        'SELECT id, nombre, apellido, correo, rol, created_at FROM usuarios WHERE correo = ?',
+        [correo]
       );
 
       res.status(201).json({

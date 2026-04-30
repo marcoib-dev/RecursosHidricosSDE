@@ -15,7 +15,7 @@ USE `recursos_hidricos_sde`;
 -- Diagrama ER: ID_usuario, nombre, apellido, correo, contraseña, rol
 -- ═══════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS `usuarios` (
-  `id`          CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `nombre`      VARCHAR(255) NOT NULL,
   `apellido`    VARCHAR(255) NOT NULL,
   `correo`      VARCHAR(255) UNIQUE NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
 -- Diagrama ER: ID_obra, tipo, ubicación, empresa, responsable, estado, año
 -- ═══════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS `obras` (
-  `id`                  CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  `id`                  INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `tipo`                ENUM('pozo','planta') NOT NULL,
   `nombre`              VARCHAR(255) NOT NULL,
   `ubicacion`           VARCHAR(500) NOT NULL,
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `obras` (
   `descripcion`         TEXT,
   `porcentaje_avance`   INT DEFAULT 100,
   `localidad`           VARCHAR(255),
-  `created_by`          CHAR(36),
+  `created_by`          INT UNSIGNED,
   `created_at`          DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at`          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (`created_by`) REFERENCES `usuarios`(`id`) ON DELETE SET NULL
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `obras` (
 -- Diagrama ER: profundidad, caudal, tipo_bomba, contaminantes
 -- ═══════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS `pozos` (
-  `id`              CHAR(36) PRIMARY KEY,
+  `id`              INT UNSIGNED PRIMARY KEY,
   `profundidad`     DECIMAL(10,2),
   `caudal`          DECIMAL(10,2),
   `tipo_bomba`      VARCHAR(255),
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `pozos` (
 -- Diagrama ER: tratamiento, capacidad, fuente
 -- ═══════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS `plantas` (
-  `id`              CHAR(36) PRIMARY KEY,
+  `id`              INT UNSIGNED PRIMARY KEY,
   `tratamiento`     VARCHAR(255),
   `capacidad`       VARCHAR(255),
   `fuente`          VARCHAR(255),
@@ -80,12 +80,12 @@ CREATE TABLE IF NOT EXISTS `plantas` (
 -- ═══════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS `archivos_obra` (
   `id`              CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  `obra_id`         CHAR(36) NOT NULL,
+  `obra_id`         INT UNSIGNED NOT NULL,
   `nombre_original` VARCHAR(500) NOT NULL,
   `nombre_guardado` VARCHAR(500) NOT NULL,
   `mime_type`       VARCHAR(100),
   `tamano`          BIGINT,
-  `subido_por`      CHAR(36),
+  `subido_por`      INT UNSIGNED,
   `created_at`      DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`obra_id`) REFERENCES `obras`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`subido_por`) REFERENCES `usuarios`(`id`) ON DELETE SET NULL
@@ -96,12 +96,12 @@ CREATE TABLE IF NOT EXISTS `archivos_obra` (
 -- Diagrama ER: ID_actividad, título, contexto, fecha
 -- ═══════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS `auditoria` (
-  `id`            CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  `usuario_id`    CHAR(36),
+  `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `usuario_id`    INT UNSIGNED,
   `titulo`        VARCHAR(255) NOT NULL,
   `contexto`      TEXT,
   `entidad`       VARCHAR(100),
-  `entidad_id`    CHAR(36),
+  `entidad_id`    VARCHAR(64),
   `ip_address`    VARCHAR(45),
   `fecha`         DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`usuario_id`) REFERENCES `usuarios`(`id`) ON DELETE SET NULL
@@ -136,50 +136,50 @@ CREATE INDEX idx_usuarios_correo ON usuarios(correo);
 -- Si querés datos de ejemplo SIN el backend, usá estos INSERT
 -- (pero las contraseñas no funcionarán para login real):
 
-INSERT INTO `usuarios` (`id`, `nombre`, `apellido`, `correo`, `contrasena`, `rol`) VALUES
-  (UUID(), 'Carlos',  'Administrador', 'admin@recursoshidricos.gob.ar',        '$2b$12$N0uSe2U3nKzyzpZocDweM.5VUHhiKSO.7qI//.EWUnjgEGNTCMkka', 'administrador'),
-  (UUID(), 'Roberto', 'Pérez',         'presidente@recursoshidricos.gob.ar',   '$2b$12$DEk/jCfQn.zkDsioi8.YKebLoGIO6qTUJsBsJi5XNIsRswNwaCq2K', 'presidente'),
-  (UUID(), 'María',   'López',         'inspector@recursoshidricos.gob.ar',    '$2b$12$bNeeXrwS6Ibp8DSrMX35neWoAq5lntsCQhLvsy/nP3ktaAhh7bOIC', 'inspector'),
-  (UUID(), 'Juan',    'García',        'construccion@recursoshidricos.gob.ar',  '$2b$12$aRRvsRBxsbxt.FLYj9KtGurkeifgSMAHSL41RAPU/sGzj3AKZV9P6', 'dpto_construccion'),
-  (UUID(), 'Ana',     'Fernández',     'estudios@recursoshidricos.gob.ar',     '$2b$12$aRRvsRBxsbxt.FLYj9KtGurkeifgSMAHSL41RAPU/sGzj3AKZV9P6', 'dpto_estudios'),
-  (UUID(), 'Pedro',   'Sánchez',       'conservacion@recursoshidricos.gob.ar', '$2b$12$aRRvsRBxsbxt.FLYj9KtGurkeifgSMAHSL41RAPU/sGzj3AKZV9P6', 'dpto_conservacion');
+INSERT INTO `usuarios` (`nombre`, `apellido`, `correo`, `contrasena`, `rol`) VALUES
+  ('Carlos',  'Administrador', 'admin@recursoshidricos.gob.ar',        '$2b$12$N0uSe2U3nKzyzpZocDweM.5VUHhiKSO.7qI//.EWUnjgEGNTCMkka', 'administrador'),
+  ('Roberto', 'Pérez',         'presidente@recursoshidricos.gob.ar',   '$2b$12$DEk/jCfQn.zkDsioi8.YKebLoGIO6qTUJsBsJi5XNIsRswNwaCq2K', 'presidente'),
+  ('María',   'López',         'inspector@recursoshidricos.gob.ar',    '$2b$12$bNeeXrwS6Ibp8DSrMX35neWoAq5lntsCQhLvsy/nP3ktaAhh7bOIC', 'inspector'),
+  ('Juan',    'García',        'construccion@recursoshidricos.gob.ar',  '$2b$12$aRRvsRBxsbxt.FLYj9KtGurkeifgSMAHSL41RAPU/sGzj3AKZV9P6', 'dpto_construccion'),
+  ('Ana',     'Fernández',     'estudios@recursoshidricos.gob.ar',     '$2b$12$aRRvsRBxsbxt.FLYj9KtGurkeifgSMAHSL41RAPU/sGzj3AKZV9P6', 'dpto_estudios'),
+  ('Pedro',   'Sánchez',       'conservacion@recursoshidricos.gob.ar', '$2b$12$aRRvsRBxsbxt.FLYj9KtGurkeifgSMAHSL41RAPU/sGzj3AKZV9P6', 'dpto_conservacion');
 
 -- Obtener el ID del admin para created_by
 SET @admin_id = (SELECT `id` FROM `usuarios` WHERE `correo` = 'admin@recursoshidricos.gob.ar' LIMIT 1);
 
 -- ─── Obras de ejemplo ────────────────────────────────
 -- Planta 1: Potabilizadora Capital (en funcionamiento)
-SET @obra1 = UUID();
-INSERT INTO `obras` (`id`, `tipo`, `nombre`, `ubicacion`, `empresa`, `responsable`, `estado`, `anio`, `latitud`, `longitud`, `descripcion`, `porcentaje_avance`, `localidad`, `created_by`) VALUES
-  (@obra1, 'planta', 'Planta Potabilizadora Capital', 'Santiago del Estero Capital', 'APRH', 'Ing. María García', 'en_funcionamiento', 2018, -27.783400, -64.264200, 'Planta principal de potabilización que abastece la ciudad capital. Capacidad de 800 m³/h.', 100, 'Capital', @admin_id);
+INSERT INTO `obras` (`tipo`, `nombre`, `ubicacion`, `empresa`, `responsable`, `estado`, `anio`, `latitud`, `longitud`, `descripcion`, `porcentaje_avance`, `localidad`, `created_by`) VALUES
+  ('planta', 'Planta Potabilizadora Capital', 'Santiago del Estero Capital', 'APRH', 'Ing. María García', 'en_funcionamiento', 2018, -27.783400, -64.264200, 'Planta principal de potabilización que abastece la ciudad capital. Capacidad de 800 m³/h.', 100, 'Capital', @admin_id);
+SET @obra1 = LAST_INSERT_ID();
 INSERT INTO `plantas` (`id`, `tratamiento`, `capacidad`, `fuente`) VALUES
   (@obra1, 'Potabilización convencional', '800 m³/h', 'Río Dulce');
 
 -- Planta 2: Tratamiento La Banda (en reparación)
-SET @obra2 = UUID();
-INSERT INTO `obras` (`id`, `tipo`, `nombre`, `ubicacion`, `empresa`, `responsable`, `estado`, `anio`, `latitud`, `longitud`, `descripcion`, `porcentaje_avance`, `localidad`, `created_by`) VALUES
-  (@obra2, 'planta', 'Planta de Tratamiento La Banda', 'La Banda, Santiago del Estero', 'APRH', 'Ing. Carlos Pérez', 'en_reparacion', 2015, -27.735000, -64.240800, 'Planta de tratamiento de aguas residuales. Actualmente en reparación de bombas principales.', 100, 'La Banda', @admin_id);
+INSERT INTO `obras` (`tipo`, `nombre`, `ubicacion`, `empresa`, `responsable`, `estado`, `anio`, `latitud`, `longitud`, `descripcion`, `porcentaje_avance`, `localidad`, `created_by`) VALUES
+  ('planta', 'Planta de Tratamiento La Banda', 'La Banda, Santiago del Estero', 'APRH', 'Ing. Carlos Pérez', 'en_reparacion', 2015, -27.735000, -64.240800, 'Planta de tratamiento de aguas residuales. Actualmente en reparación de bombas principales.', 100, 'La Banda', @admin_id);
+SET @obra2 = LAST_INSERT_ID();
 INSERT INTO `plantas` (`id`, `tratamiento`, `capacidad`, `fuente`) VALUES
   (@obra2, 'Tratamiento secundario', '500 m³/h', 'Río Dulce');
 
 -- Pozo 1: Nº 14 Añatuya (en funcionamiento)
-SET @obra3 = UUID();
-INSERT INTO `obras` (`id`, `tipo`, `nombre`, `ubicacion`, `empresa`, `responsable`, `estado`, `anio`, `latitud`, `longitud`, `descripcion`, `porcentaje_avance`, `localidad`, `created_by`) VALUES
-  (@obra3, 'pozo', 'Pozo Nº 14 - Añatuya', 'Añatuya, General Taboada', 'APRH', 'Ing. Roberto Sánchez', 'en_funcionamiento', 2020, -28.461400, -62.835600, 'Pozo de extracción de agua subterránea para abastecimiento de la localidad de Añatuya.', 100, 'Añatuya', @admin_id);
+INSERT INTO `obras` (`tipo`, `nombre`, `ubicacion`, `empresa`, `responsable`, `estado`, `anio`, `latitud`, `longitud`, `descripcion`, `porcentaje_avance`, `localidad`, `created_by`) VALUES
+  ('pozo', 'Pozo Nº 14 - Añatuya', 'Añatuya, General Taboada', 'APRH', 'Ing. Roberto Sánchez', 'en_funcionamiento', 2020, -28.461400, -62.835600, 'Pozo de extracción de agua subterránea para abastecimiento de la localidad de Añatuya.', 100, 'Añatuya', @admin_id);
+SET @obra3 = LAST_INSERT_ID();
 INSERT INTO `pozos` (`id`, `profundidad`, `caudal`, `tipo_bomba`, `contaminantes`) VALUES
   (@obra3, 120.00, 45.50, 'Bomba sumergible centrífuga', 'Arsénico: 0.01 mg/L (dentro de norma)');
 
 -- Pozo 2: Nº 22 Termas de Río Hondo (fuera de servicio)
-SET @obra4 = UUID();
-INSERT INTO `obras` (`id`, `tipo`, `nombre`, `ubicacion`, `empresa`, `responsable`, `estado`, `anio`, `latitud`, `longitud`, `descripcion`, `porcentaje_avance`, `localidad`, `created_by`) VALUES
-  (@obra4, 'pozo', 'Pozo Nº 22 - Termas de Río Hondo', 'Termas de Río Hondo, Río Hondo', 'APRH', 'Ing. Ana Fernández', 'fuera_de_servicio', 2012, -27.493500, -64.858300, 'Pozo fuera de servicio. Pendiente reemplazo de bomba y análisis de contaminantes.', 100, 'Termas de Río Hondo', @admin_id);
+INSERT INTO `obras` (`tipo`, `nombre`, `ubicacion`, `empresa`, `responsable`, `estado`, `anio`, `latitud`, `longitud`, `descripcion`, `porcentaje_avance`, `localidad`, `created_by`) VALUES
+  ('pozo', 'Pozo Nº 22 - Termas de Río Hondo', 'Termas de Río Hondo, Río Hondo', 'APRH', 'Ing. Ana Fernández', 'fuera_de_servicio', 2012, -27.493500, -64.858300, 'Pozo fuera de servicio. Pendiente reemplazo de bomba y análisis de contaminantes.', 100, 'Termas de Río Hondo', @admin_id);
+SET @obra4 = LAST_INSERT_ID();
 INSERT INTO `pozos` (`id`, `profundidad`, `caudal`, `tipo_bomba`, `contaminantes`) VALUES
   (@obra4, 85.00, 0.00, 'Bomba sumergible (dañada)', 'Pendiente análisis');
 
 -- Planta 3: Potabilizadora Fernández (en construcción, 65%)
-SET @obra5 = UUID();
-INSERT INTO `obras` (`id`, `tipo`, `nombre`, `ubicacion`, `empresa`, `responsable`, `estado`, `anio`, `latitud`, `longitud`, `descripcion`, `porcentaje_avance`, `localidad`, `created_by`) VALUES
-  (@obra5, 'planta', 'Planta Potabilizadora Fernández', 'Fernández, Robles', 'Constructora del Norte SRL', 'Ing. Juan Herrera', 'en_construccion', 2025, -27.923700, -63.895300, 'Nueva planta potabilizadora en construcción para abastecer la localidad de Fernández y zonas aledañas.', 65, 'Fernández', @admin_id);
+INSERT INTO `obras` (`tipo`, `nombre`, `ubicacion`, `empresa`, `responsable`, `estado`, `anio`, `latitud`, `longitud`, `descripcion`, `porcentaje_avance`, `localidad`, `created_by`) VALUES
+  ('planta', 'Planta Potabilizadora Fernández', 'Fernández, Robles', 'Constructora del Norte SRL', 'Ing. Juan Herrera', 'en_construccion', 2025, -27.923700, -63.895300, 'Nueva planta potabilizadora en construcción para abastecer la localidad de Fernández y zonas aledañas.', 65, 'Fernández', @admin_id);
+SET @obra5 = LAST_INSERT_ID();
 INSERT INTO `plantas` (`id`, `tratamiento`, `capacidad`, `fuente`) VALUES
   (@obra5, 'Potabilización por ósmosis inversa', '300 m³/h (proyectada)', 'Acuífero subterráneo');
 
