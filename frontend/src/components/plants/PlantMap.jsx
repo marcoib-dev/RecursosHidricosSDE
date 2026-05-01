@@ -4,6 +4,11 @@ import { MapPin } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
+const SANTIAGO_DEL_ESTERO_BOUNDS = [
+  [-24.8, -65.8],
+  [-28.8, -61.5],
+];
+
 // Fix for default marker icon in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -24,6 +29,9 @@ const PlantMap = ({ coordinates, name }) => {
       <MapContainer
         center={[coordinates.lat, coordinates.lng]}
         zoom={13}
+        minZoom={4}
+        maxBounds={ARGENTINA_BOUNDS}
+        maxBoundsViscosity={1.0}
         className="h-96 w-full"
         scrollWheelZoom={true}
       >

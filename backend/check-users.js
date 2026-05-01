@@ -5,7 +5,7 @@ const mysql = require('mysql2/promise');
     const pool = mysql.createPool({
       host: 'localhost',
       user: 'root',
-      password: '46141305',
+      password: '45711575',
       database: 'recursos_hidricos_sde'
     });
 
@@ -13,11 +13,11 @@ const mysql = require('mysql2/promise');
     console.log('\n✅ Conectado a la BD\n');
 
     // Obtener usuarios
-    const [usuarios] = await conn.query('SELECT id, email, nombre, contrasena FROM usuarios');
+    const [usuarios] = await conn.query('SELECT id, correo, nombre, contrasena FROM usuarios');
     
     console.log('📋 USUARIOS EN BASE DE DATOS:\n');
     usuarios.forEach(u => {
-      console.log(`  Email: ${u.email}`);
+      console.log(`  Correo: ${u.correo}`);
       console.log(`  Nombre: ${u.nombre}`);
       console.log(`  Hash: ${u.contrasena.substring(0, 30)}...`);
       console.log('');

@@ -29,6 +29,13 @@ const TIPO_LABELS = {
   planta: 'Planta',
 };
 
+const ARGENTINA_BOUNDS = [
+  [-55.5, -73.6],
+  [-21.8, -53.6],
+];
+
+const ARGENTINA_CENTER = [-38.4161, -63.6167];
+
 function normalizeTipo(tipo) {
   const normalized = String(tipo || '').toLowerCase();
   if (normalized === 'planta_potabilizadora') return 'planta';
@@ -131,8 +138,8 @@ export default function MapPage() {
     return c;
   }, [obras]);
 
-  // Centro default: Santiago del Estero, Argentina
-  const defaultCenter = [-27.7833, -64.2667];
+  // Centro default: Argentina
+  const defaultCenter = ARGENTINA_CENTER;
 
   return (
     <DashboardLayout>
@@ -223,7 +230,10 @@ export default function MapPage() {
           ) : (
             <MapContainer
               center={defaultCenter}
-              zoom={8}
+              zoom={4}
+              minZoom={4}
+              maxBounds={ARGENTINA_BOUNDS}
+              maxBoundsViscosity={1.0}
               style={{ height: '100%', width: '100%' }}
               zoomControl={true}
             >

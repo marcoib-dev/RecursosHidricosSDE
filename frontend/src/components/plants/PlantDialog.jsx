@@ -5,6 +5,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
+import { Loader2, Search } from 'lucide-react';
+import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+const ARGENTINA_BOUNDS = [
+  [-55.5, -73.6],
+  [-21.8, -53.6],
+];
+
+const ARGENTINA_CENTER = [-38.4161, -63.6167];
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
 
 const defaultForm = {
   tipo: 'pozo',
@@ -14,8 +33,8 @@ const defaultForm = {
   responsable: '',
   estado: 'en_construccion',
   anio: new Date().getFullYear(),
-  latitud: -27.7833,
-  longitud: -64.2667,
+  latitud: '',
+  longitud: '',
   descripcion: '',
   porcentaje_avance: 0,
   localidad: '',
@@ -30,17 +49,194 @@ const defaultForm = {
   fuente: '',
 };
 
+const parseNumberInput = (value) => (value === '' ? '' : Number(value));
+
+function buildAddressQuery(ubicacion, localidad) {
+  return [ubicacion, localidad, 'Argentina']
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(', ');
+}
+
+function formatLocalidad(address = {}) {
+  return (
+    address.city ||
+    address.town ||
+    address.village ||
+    address.municipality ||
+    address.suburb ||
+    address.county ||
+    ''
+  );
+}
+
+function formatStreetAddress(address = {}, fallback = '') {
+  const street = [address.road, address.house_number].filter(Boolean).join(' ').trim();
+  const locality = formatLocalidad(address);
+  if (street && locality) return `${street}, ${locality}`;
+  if (street) return street;
+  return fallback;
+}
+
+async function searchArgentinaAddresses(ubicacion, localidad) {
+  const query = buildAddressQuery(ubicacion, localidad);
+
+  if (query.length < 4) {
+    return [];
+  }
+
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&countrycodes=ar&q=${encodeURIComponent(query)}`,
+    {
+      headers: {
+        Accept: 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('No se pudo consultar el servicio de autocompletado.');
+  }
+
+  const results = await response.json();
+  return Array.isArray(results)
+    ? results.map((result) => ({
+        label: result.display_name,
+        ubicacion: formatStreetAddress(result.address, result.display_name),
+        localidad: formatLocalidad(result.address),
+        latitud: Number(result.lat),
+        longitud: Number(result.lon),
+      }))
+    : [];
+}
+
+async function geocodeArgentinaAddress(formData) {
+  const query = buildAddressQuery(formData.ubicacion, formData.localidad);
+
+  if (!formData.ubicacion?.trim()) {
+    throw new Error('Escribí una calle y altura para buscar la ubicación.');
+  }
+
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&countrycodes=ar&q=${encodeURIComponent(query)}`,
+    {
+      headers: {
+        Accept: 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('No se pudo consultar el servicio de geocodificación.');
+  }
+
+  const results = await response.json();
+  if (!Array.isArray(results) || results.length === 0) {
+    return null;
+  }
+
+  return {
+    latitud: Number(results[0].lat),
+    longitud: Number(results[0].lon),
+    direccion: results[0].display_name,
+    ubicacion: formatStreetAddress(results[0].address, results[0].display_name),
+    localidad: formatLocalidad(results[0].address),
+  };
+}
+
+async function reverseGeocodeArgentina(latitud, longitud) {
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&countrycodes=ar&lat=${encodeURIComponent(latitud)}&lon=${encodeURIComponent(longitud)}`,
+    {
+      headers: {
+        Accept: 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('No se pudo consultar la ubicación desde el mapa.');
+  }
+
+  const result = await response.json();
+  if (!result || !result.display_name) {
+    return null;
+  }
+
+  return {
+    direccion: result.display_name,
+    ubicacion: formatStreetAddress(result.address, result.display_name),
+    localidad: formatLocalidad(result.address),
+  };
+}
+
+function LocationPickerEvents({ position, onPickLocation }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (Number.isFinite(position[0]) && Number.isFinite(position[1])) {
+      map.setView(position, 14, { animate: true });
+    }
+  }, [map, position[0], position[1]]);
+
+  useMapEvents({
+    click(event) {
+      onPickLocation(event.latlng.lat, event.latlng.lng);
+    },
+  });
+
+  return null;
+}
+
+function LocationPickerMap({ position, onPickLocation }) {
+  const hasPosition = Number.isFinite(position[0]) && Number.isFinite(position[1]);
+  const markerPosition = hasPosition ? position : SANTIAGO_DEL_ESTERO_CENTER;
+
+  return (
+    <MapContainer
+      center={markerPosition}
+      zoom={hasPosition ? 14 : 5}
+      minZoom={4}
+      maxBounds={ARGENTINA_BOUNDS}
+      maxBoundsViscosity={1.0}
+      scrollWheelZoom={true}
+      className="h-80 w-full"
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <LocationPickerEvents position={markerPosition} onPickLocation={onPickLocation} />
+      <Marker
+        position={markerPosition}
+        draggable
+        eventHandlers={{
+          dragend: (event) => {
+            const latlng = event.target.getLatLng();
+            onPickLocation(latlng.lat, latlng.lng);
+          },
+        }}
+      />
+    </MapContainer>
+  );
+}
+
 const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
   const [formData, setFormData] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
+  const [searchingLocation, setSearchingLocation] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (plant) {
       setFormData({
         ...defaultForm,
         ...plant,
-        latitud: plant.latitud || defaultForm.latitud,
-        longitud: plant.longitud || defaultForm.longitud,
+        latitud: plant.latitud ?? defaultForm.latitud,
+        longitud: plant.longitud ?? defaultForm.longitud,
         // Datos específicos que vienen del sub-objeto
         profundidad: plant.pozo?.profundidad || plant.profundidad || '',
         caudal: plant.pozo?.caudal || plant.caudal || '',
@@ -55,16 +251,161 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
     }
   }, [plant, open]);
 
+  useEffect(() => {
+    if (!open) {
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const query = buildAddressQuery(formData.ubicacion, formData.localidad);
+    if (query.length < 4) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = setTimeout(async () => {
+      try {
+        setSuggestionsLoading(true);
+        const suggestions = await searchArgentinaAddresses(formData.ubicacion, formData.localidad);
+        if (!cancelled) {
+          setAddressSuggestions(suggestions);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setAddressSuggestions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setSuggestionsLoading(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [formData.ubicacion, formData.localidad, open]);
+
+  const updateCoordinatesFromMap = async (latitud, longitud) => {
+    setSearchingLocation(true);
+    setFormData((current) => ({
+      ...current,
+      latitud,
+      longitud,
+    }));
+
+    try {
+      const result = await reverseGeocodeArgentina(latitud, longitud);
+      if (result) {
+        setFormData((current) => ({
+          ...current,
+          latitud,
+          longitud,
+          ubicacion: result.ubicacion || current.ubicacion,
+          localidad: result.localidad || current.localidad,
+        }));
+        setAddressSuggestions([]);
+        setShowSuggestions(false);
+        toast({
+          title: 'Ubicación actualizada',
+          description: result.direccion,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ubicación actualizada',
+        description: 'Se guardaron las coordenadas del mapa.',
+      });
+    } finally {
+      setSearchingLocation(false);
+    }
+  };
+
+  const handleSelectSuggestion = (suggestion) => {
+    setFormData((current) => ({
+      ...current,
+      ubicacion: suggestion.ubicacion,
+      localidad: suggestion.localidad || current.localidad,
+      latitud: suggestion.latitud,
+      longitud: suggestion.longitud,
+    }));
+    setAddressSuggestions([]);
+    setShowSuggestions(false);
+    toast({
+      title: 'Dirección seleccionada',
+      description: suggestion.label,
+    });
+  };
+
+  const handleSearchLocation = async () => {
+    try {
+      setSearchingLocation(true);
+      const result = await geocodeArgentinaAddress(formData);
+
+      if (!result) {
+        toast({
+          title: 'No se encontró la dirección',
+          description: 'Probá agregando más datos o completá latitud y longitud manualmente.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setFormData((current) => ({
+        ...current,
+        latitud: result.latitud,
+        longitud: result.longitud,
+        ubicacion: result.ubicacion || current.ubicacion,
+        localidad: result.localidad || current.localidad,
+      }));
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
+
+      toast({
+        title: 'Ubicación encontrada',
+        description: result.direccion,
+      });
+    } catch (error) {
+      toast({
+        title: 'No se pudo buscar la ubicación',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setSearchingLocation(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    await onSave(formData);
-    setSaving(false);
+
+    try {
+      let payload = { ...formData };
+
+      if ((!payload.latitud || !payload.longitud) && payload.ubicacion?.trim()) {
+        const result = await geocodeArgentinaAddress(payload);
+        if (result) {
+          payload = {
+            ...payload,
+            latitud: result.latitud,
+            longitud: result.longitud,
+          };
+        }
+      }
+
+      await onSave(payload);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{plant ? 'Editar Obra' : 'Nueva Obra Hídrica'}</DialogTitle>
         </DialogHeader>
@@ -95,13 +436,69 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ubicacion">Ubicación *</Label>
-              <Input
-                id="ubicacion"
-                value={formData.ubicacion}
-                onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
-                required
-              />
+              <Label htmlFor="ubicacion">Ubicación / dirección *</Label>
+              <div className="space-y-2">
+                <div className="flex gap-2 relative">
+                  <div className="relative flex-1">
+                    <Input
+                      id="ubicacion"
+                      value={formData.ubicacion}
+                      onChange={(e) => {
+                        setFormData({ ...formData, ubicacion: e.target.value });
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => {
+                        window.setTimeout(() => setShowSuggestions(false), 150);
+                      }}
+                      placeholder="Calle y altura, barrio o referencia"
+                      required
+                    />
+                    {showSuggestions && (suggestionsLoading || addressSuggestions.length > 0) && (
+                      <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+                        {suggestionsLoading ? (
+                          <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Buscando direcciones...
+                          </div>
+                        ) : (
+                          addressSuggestions.map((suggestion) => (
+                            <button
+                              key={`${suggestion.latitud}-${suggestion.longitud}-${suggestion.label}`}
+                              type="button"
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                handleSelectSuggestion(suggestion);
+                              }}
+                              className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm last:border-b-0 hover:bg-cyan-50"
+                            >
+                              <div className="font-medium text-gray-900">{suggestion.ubicacion || suggestion.label}</div>
+                              <div className="text-xs text-gray-500">{suggestion.label}</div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSearchLocation}
+                    disabled={searchingLocation || !formData.ubicacion?.trim()}
+                    className="shrink-0"
+                  >
+                    {searchingLocation ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Search className="w-4 h-4" />
+                    )}
+                    Buscar
+                  </Button>
+                </div>
+              <p className="text-xs text-gray-500">
+                Escribí una dirección como calle y altura. Podés elegir una sugerencia o marcar la ubicación en el mapa.
+              </p>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -154,7 +551,7 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
                 id="anio"
                 type="number"
                 value={formData.anio}
-                onChange={(e) => setFormData({ ...formData, anio: parseInt(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, anio: parseNumberInput(e.target.value) })}
               />
             </div>
 
@@ -166,7 +563,7 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
                 min="0"
                 max="100"
                 value={formData.porcentaje_avance}
-                onChange={(e) => setFormData({ ...formData, porcentaje_avance: parseInt(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, porcentaje_avance: parseNumberInput(e.target.value) })}
               />
             </div>
 
@@ -177,7 +574,7 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
                 type="number"
                 step="any"
                 value={formData.latitud}
-                onChange={(e) => setFormData({ ...formData, latitud: parseFloat(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, latitud: parseNumberInput(e.target.value) })}
               />
             </div>
 
@@ -188,8 +585,24 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
                 type="number"
                 step="any"
                 value={formData.longitud}
-                onChange={(e) => setFormData({ ...formData, longitud: parseFloat(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, longitud: parseNumberInput(e.target.value) })}
               />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <div className="flex items-center justify-between gap-3">
+                <Label>Ubicación en el mapa</Label>
+                <span className="text-xs text-gray-500">Hacé clic o arrastrá el pin para ajustar la obra</span>
+              </div>
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                <LocationPickerMap
+                  position={[
+                    Number.isFinite(Number(formData.latitud)) ? Number(formData.latitud) : SANTIAGO_DEL_ESTERO_CENTER[0],
+                    Number.isFinite(Number(formData.longitud)) ? Number(formData.longitud) : SANTIAGO_DEL_ESTERO_CENTER[1],
+                  ]}
+                  onPickLocation={updateCoordinatesFromMap}
+                />
+              </div>
             </div>
           </div>
 
