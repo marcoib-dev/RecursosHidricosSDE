@@ -19,7 +19,7 @@ L.Icon.Default.mergeOptions({
 
 const PlantMap = ({ coordinates, name }) => {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden relative z-0">
       <div className="p-4 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <MapPin className="w-5 h-5 text-cyan-600" />
@@ -32,7 +32,7 @@ const PlantMap = ({ coordinates, name }) => {
         minZoom={4}
           maxBounds={SANTIAGO_DEL_ESTERO_BOUNDS}
         maxBoundsViscosity={1.0}
-        className="h-96 w-full"
+        className="h-96 w-full z-0"
         scrollWheelZoom={true}
       >
         <TileLayer

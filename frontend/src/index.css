@@ -56,3 +56,26 @@
     scrollbar-width: none;
   }
 }
+
+/* Ajuste: bajar z-index de contenedor y controles de Leaflet
+   para que la barra superior (z-50) y el sidebar (z-40) queden por encima
+   y el mapa no se interponga al hacer scroll. */
+.leaflet-container {
+  z-index: 0 !important;
+}
+
+.leaflet-container .leaflet-control {
+  z-index: 5 !important;
+}
+
+.leaflet-container .leaflet-popup {
+  z-index: 10 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  z-index: 10 !important;
+}
+
+.leaflet-popup-tip {
+  z-index: 10 !important;
+}
