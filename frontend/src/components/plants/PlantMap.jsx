@@ -30,7 +30,7 @@ const PlantMap = ({ coordinates, name }) => {
         center={[coordinates.lat, coordinates.lng]}
         zoom={13}
         minZoom={4}
-        maxBounds={ARGENTINA_BOUNDS}
+          maxBounds={SANTIAGO_DEL_ESTERO_BOUNDS}
         maxBoundsViscosity={1.0}
         className="h-96 w-full"
         scrollWheelZoom={true}
