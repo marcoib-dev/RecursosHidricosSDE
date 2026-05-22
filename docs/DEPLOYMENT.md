@@ -188,6 +188,25 @@ services:
 
 volumes:
     mysql_data:
+
+
+### Configuración del Entorno en el Frontend
+
+Es **crítico** configurar las variables de entorno del frontend para que las peticiones del cliente apunten correctamente al servidor de backend y no a `localhost`:
+
+1. Crear un archivo `frontend/.env` en el entorno de despliegue.
+2. Definir la variable `VITE_API_URL` apuntando a la IP pública, privada de la organización o dominio asignado al servidor:
+
+```env
+VITE_API_URL=http://<IP_O_DOMINIO_DEL_SERVIDOR>:4000
+```
+
+### Comandos de Mantenimiento dentro del Contenedor (Seeds)
+
+Si se requiere volver a popular la base de datos con los usuarios de prueba iniciales dentro del entorno Docker, ejecutar desde la consola del contenedor de backend (`rh_backend`):
+
+```bash
+DB_HOST=rh_mysql DB_PORT=3306 DB_USER=root DB_PASSWORD=tu_password_segura npm run db:seed
 ```
 
 ## Despliegue en Produccion
