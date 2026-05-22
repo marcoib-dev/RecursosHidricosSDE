@@ -58,13 +58,14 @@ Sistema web de gestion integral de obras hidricas (pozos y plantas potabilizador
 ### Base de Datos
 | Tecnologia | Version | Uso |
 |---|---|---|
-| MySQL | 8.0+ | Base de datos relacional |
+| MySQL / MariaDB | 8.0+ / 10.4+ | Base de datos relacional (Compatible con arquitecturas heredadas) |
 
 ## Requisitos Previos
 
 - **Node.js** >= 18.x ([descargar](https://nodejs.org/))
 - **npm** >= 9.x (incluido con Node.js)
-- **MySQL** >= 8.0 ([descargar](https://dev.mysql.com/downloads/mysql/))
+- **MySQL** >= 8.0 ([descargar](https://dev.mysql.com/downloads/mysql/)) 
+- Alternativa a MySQL **MariaDB** >= 10.4 ([descargar](https://mariadb.org/download/))
 
 ## Instalacion Rapida
 

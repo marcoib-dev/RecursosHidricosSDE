@@ -127,6 +127,69 @@ Para Windows (CMD):
 SETUP_BD.bat
 ```
 
+## Despliegue Automatizado con Docker (Recomendado)
+
+Para garantizar un despliegue aislado, rápido y evitar conflictos de arquitectura de procesador (como las restricciones de instrucciones `x86-64-v2` de MySQL 8 en hardware antiguo), el sistema está completamente dockerizado utilizando **MariaDB** como motor de base de datos drop-in replacement.
+
+### Estructura de Producción con Docker Compose
+
+Crear un archivo `docker-compose.yml` en la raíz del servidor o levantar un nuevo Stack en Portainer con la siguiente configuración:
+
+```yaml
+version: '3.8'
+
+services:
+  db-rh:
+    image: mariadb:10.11
+    container_name: rh_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: tu_password_segura
+      MYSQL_DATABASE: recursos_hidricos_sde
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend-rh:
+    image: node:18-slim
+    container_name: rh_backend
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    ports:
+      - "4000:4000"
+    networks:
+      - default
+    environment:
+      - DB_HOST=rh_mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=tu_password_segura
+    command: sh -c "sleep 15 && npm install && DB_HOST=rh_mysql DB_PORT=3306 DB_USER=root DB_PASSWORD=tu_password_segura node src/database/init.mjs"
+    depends_on:
+      - db-rh
+
+  frontend-rh:
+    image: node:18-slim
+    container_name: rh_frontend
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://<IP_O_DOMINIO_DEL_SERVIDOR>:4000
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
+    depends_on:
+      - backend-rh
+
+volumes:
+    mysql_data:
+```
+
 ## Despliegue en Produccion
 
 ### Build del Frontend
