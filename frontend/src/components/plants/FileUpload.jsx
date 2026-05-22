@@ -97,7 +97,8 @@ const FileUpload = ({ plantId, files = [], onUpload, onDelete, canUpload = true,
                   size="sm"
                   onClick={() => {
                     const token = localStorage.getItem('token');
-                    window.open(`http://localhost:4000/api/archivos/download/${file.id}?token=${token}`, '_blank');
+                    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+                    window.open(`${apiBaseUrl}/api/archivos/download/${file.id}?token=${token}`, '_blank');
                   }}
                 >
                   <Download className="w-4 h-4" />

@@ -1,5 +1,5 @@
 // Servicio centralizado para comunicarse con el backend
-const API_BASE = 'http://localhost:4000/api';
+const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'http://localhost:4000/api';
 
 // Helper para hacer requests con token JWT
 async function request(endpoint, options = {}) {
