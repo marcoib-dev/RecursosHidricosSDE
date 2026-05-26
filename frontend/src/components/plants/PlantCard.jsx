@@ -63,7 +63,7 @@ const PlantCard = ({ plant, onEdit, onDelete, onClick }) => {
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer"
+      className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer dark:bg-slate-900 dark:border-slate-800"
       onClick={onClick}
     >
       <div className={`h-48 bg-gradient-to-br ${backgroundColors[plant.estado] || 'from-cyan-500 to-blue-600'} relative overflow-hidden`}>
@@ -90,19 +90,19 @@ const PlantCard = ({ plant, onEdit, onDelete, onClick }) => {
       </div>
 
       <div className="p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-2 truncate">{plant.nombre}</h3>
+        <h3 className="text-xl font-bold text-gray-900 mb-2 truncate dark:text-gray-100">{plant.nombre}</h3>
         
         <div className="space-y-2 mb-4">
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
             <span className="truncate">{plant.ubicacion}</span>
           </div>
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <User className="w-4 h-4 mr-2 flex-shrink-0" />
             <span className="truncate">{plant.responsable}</span>
           </div>
           {plant.empresa && (
-            <div className="flex items-center text-sm text-gray-600">
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
               <Building2 className="w-4 h-4 mr-2 flex-shrink-0" />
               <span className="truncate">{plant.empresa}</span>
             </div>

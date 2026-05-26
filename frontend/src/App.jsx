@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ThemeProvider, ThemeToggleButton } from '@/contexts/ThemeContext';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
@@ -37,24 +38,27 @@ function AuditRoute({ children }) {
 function App() {
   return (
     <HelmetProvider>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-            <Route path="/plantas" element={<PrivateRoute><PlantsPage /></PrivateRoute>} />
-            <Route path="/plantas/:id" element={<PrivateRoute><PlantDetailPage /></PrivateRoute>} />
-            <Route path="/perfil" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
-            <Route path="/mapa" element={<PrivateRoute><MapPage /></PrivateRoute>} />
-            <Route path="/usuarios" element={<AdminRoute><UsersPage /></AdminRoute>} />
-            <Route path="/auditoria" element={<AuditRoute><AuditPage /></AuditRoute>} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-          <Toaster />
-        </Router>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+            <ThemeToggleButton />
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              <Route path="/plantas" element={<PrivateRoute><PlantsPage /></PrivateRoute>} />
+              <Route path="/plantas/:id" element={<PrivateRoute><PlantDetailPage /></PrivateRoute>} />
+              <Route path="/perfil" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+              <Route path="/mapa" element={<PrivateRoute><MapPage /></PrivateRoute>} />
+              <Route path="/usuarios" element={<AdminRoute><UsersPage /></AdminRoute>} />
+              <Route path="/auditoria" element={<AuditRoute><AuditPage /></AuditRoute>} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+            <Toaster />
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
     </HelmetProvider>
   );
 }

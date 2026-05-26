@@ -153,8 +153,8 @@ const DashboardLayout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200 fixed w-full z-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+      <nav className="bg-white border-b border-gray-200 fixed w-full z-50 dark:bg-slate-900 dark:border-slate-800">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -173,7 +173,7 @@ const DashboardLayout = ({ children }) => {
                   style={{ display: "flex", alignItems: "center", gap: "10px" }}
                 >
                   <img src={Logo} alt="Logo" width={32} height={32} />
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent dark:from-cyan-300 dark:to-teal-200">
                     Recursos Hidricos de SDE
                   </h1>
                 </div>
@@ -185,7 +185,7 @@ const DashboardLayout = ({ children }) => {
               <div className="relative">
                 <button
                   onClick={toggleNotifications}
-                  className="relative p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  className="relative p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors dark:text-gray-300 dark:hover:text-white dark:hover:bg-slate-800"
                   title={`${totalAlertas} alerta(s)`}
                 >
                   <Bell className="w-5 h-5" />
@@ -203,12 +203,12 @@ const DashboardLayout = ({ children }) => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.98 }}
                       transition={{ duration: 0.18 }}
-                      className="absolute right-0 top-full mt-3 w-96 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl z-50"
+                      className="absolute right-0 top-full mt-3 w-96 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl z-50 dark:border-slate-700 dark:bg-slate-900"
                     >
                       <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-4 py-3">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900">Notificaciones</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notificaciones</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                               {unreadNotifications.length > 0
                                 ? `${unreadNotifications.length} alerta(s) sin leer`
                               : 'No hay notificaciones nuevas'}
@@ -218,14 +218,14 @@ const DashboardLayout = ({ children }) => {
                           {unreadNotifications.length > 0 && (
                             <button
                               onClick={markAllNotificationsAsSeen}
-                              className="rounded-lg border border-cyan-200 px-2.5 py-1 text-xs font-medium text-cyan-700 hover:bg-cyan-50"
+                              className="rounded-lg border border-cyan-200 px-2.5 py-1 text-xs font-medium text-cyan-700 hover:bg-cyan-50 dark:border-cyan-900/60 dark:text-cyan-200 dark:hover:bg-cyan-950/40"
                             >
                               Marcar todas como leídas
                             </button>
                           )}
                           <button
                             onClick={() => setNotificacionesAbiertas(false)}
-                            className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                            className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-slate-800 dark:hover:text-gray-200"
                             aria-label="Cerrar notificaciones"
                           >
                             <X className="w-4 h-4" />
@@ -235,7 +235,7 @@ const DashboardLayout = ({ children }) => {
 
                       <div className="max-h-96 overflow-y-auto">
                         {unreadNotifications.length === 0 ? (
-                          <div className="px-4 py-8 text-center text-sm text-gray-500">
+                            <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                             Todo está al día por ahora.
                           </div>
                         ) : (
@@ -261,16 +261,16 @@ const DashboardLayout = ({ children }) => {
                                 key={`${notificacion.id}-${index}`}
                                 type="button"
                                 onClick={() => handleNotificationClick(notificacion)}
-                                className={`flex w-full gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-gray-50 ${isUnread ? 'bg-cyan-50/40' : ''}`}
+                                className={`flex w-full gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-gray-50 dark:border-slate-800 dark:hover:bg-slate-800/70 ${isUnread ? 'bg-cyan-50/40 dark:bg-cyan-950/20' : ''}`}
                               >
                                 <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${fondoPorTipo[notificacion.tipo] || 'bg-gray-100 text-gray-600'}`}>
                                   <Icono className="w-5 h-5" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-semibold text-gray-900">{notificacion.titulo}</p>
-                                  <p className="text-sm text-gray-600">{notificacion.mensaje}</p>
+                                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{notificacion.titulo}</p>
+                                  <p className="text-sm text-gray-600 dark:text-gray-300">{notificacion.mensaje}</p>
                                   {notificacion.detalle && (
-                                    <p className="mt-1 text-xs leading-5 text-gray-500">{notificacion.detalle}</p>
+                                    <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">{notificacion.detalle}</p>
                                   )}
                                 </div>
                               </button>
@@ -295,14 +295,14 @@ const DashboardLayout = ({ children }) => {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-56 dark:border-slate-700 dark:bg-slate-900">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user?.nombre} {user?.apellido}</p>
-                      <p className="text-xs text-gray-500">{user?.correo}</p>
+                      <p className="text-sm font-medium dark:text-gray-100">{user?.nombre} {user?.apellido}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{user?.correo}</p>
                       <div className="flex items-center gap-1">
                         <ShieldCheck className="w-3 h-3 text-cyan-600" />
-                        <p className="text-xs text-cyan-600 font-semibold">
+                        <p className="text-xs text-cyan-600 font-semibold dark:text-cyan-300">
                           {getRolLabel(user?.rol)}
                         </p>
                       </div>
@@ -337,7 +337,7 @@ const DashboardLayout = ({ children }) => {
       </AnimatePresence>
 
       <aside
-        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 z-40 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 z-40 transform transition-transform duration-300 ease-in-out dark:bg-slate-900 dark:border-slate-800 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
@@ -352,7 +352,7 @@ const DashboardLayout = ({ children }) => {
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 location.pathname === item.path
                   ? "bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100"
+                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-slate-800"
               }`}
             >
               {item.icon}
@@ -366,7 +366,7 @@ const DashboardLayout = ({ children }) => {
           ))}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-slate-800">
           <div className="flex items-center space-x-3 px-4 py-3">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
               permisos?.gestionarUsuarios ? 'bg-gradient-to-br from-purple-600 to-indigo-600' :
@@ -376,12 +376,12 @@ const DashboardLayout = ({ children }) => {
               {getInitials(user?.nombre_completo || user?.nombre || "U")}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{user?.nombre} {user?.apellido}</p>
+              <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">{user?.nombre} {user?.apellido}</p>
               <p className={`text-xs font-semibold ${
                 permisos?.gestionarUsuarios ? 'text-purple-600' :
                 permisos?.eliminarObra ? 'text-amber-600' :
                 'text-cyan-600'
-              }`}>
+              } dark:text-cyan-300`}>
                 {getRolLabel(user?.rol)}
               </p>
             </div>
@@ -389,7 +389,7 @@ const DashboardLayout = ({ children }) => {
         </div>
       </aside>
 
-      <main className="lg:pl-64 pt-16">
+      <main className="lg:pl-64 pt-16 dark:bg-slate-950">
         <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
     </div>

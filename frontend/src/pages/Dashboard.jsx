@@ -60,7 +60,7 @@ const Dashboard = () => {
       value: stats.totalObras,
       icon: <Droplets className="w-6 h-6" />,
       color: "from-cyan-500 to-blue-500",
-      bgColor: "bg-cyan-50",
+      bgColor: "bg-cyan-50 dark:bg-cyan-950/55 dark:border-cyan-800/80",
       estado: 'total',
     },
     {
@@ -68,7 +68,7 @@ const Dashboard = () => {
       value: stats.enFuncionamiento,
       icon: <CheckCircle className="w-6 h-6" />,
       color: "from-green-500 to-emerald-500",
-      bgColor: "bg-green-50",
+      bgColor: "bg-green-50 dark:bg-emerald-950/55 dark:border-emerald-800/80",
       estado: 'en_funcionamiento',
     },
     {
@@ -76,7 +76,7 @@ const Dashboard = () => {
       value: stats.enReparacion,
       icon: <Wrench className="w-6 h-6" />,
       color: "from-orange-500 to-yellow-500",
-      bgColor: "bg-orange-50",
+      bgColor: "bg-orange-50 dark:bg-orange-950/55 dark:border-orange-800/80",
       estado: 'en_reparacion',
     },
     {
@@ -84,7 +84,7 @@ const Dashboard = () => {
       value: stats.enConstruccion,
       icon: <HardHat className="w-6 h-6" />,
       color: "from-yellow-500 to-orange-500",
-      bgColor: "bg-yellow-50",
+      bgColor: "bg-yellow-50 dark:bg-amber-950/55 dark:border-amber-800/80",
       estado: 'en_construccion',
     },
     {
@@ -92,7 +92,7 @@ const Dashboard = () => {
       value: stats.fueraDeServicio,
       icon: <AlertTriangle className="w-6 h-6" />,
       color: "from-red-500 to-pink-500",
-      bgColor: "bg-red-50",
+      bgColor: "bg-red-50 dark:bg-rose-950/55 dark:border-rose-800/80",
       estado: 'fuera_de_servicio',
     },
   ] : [];

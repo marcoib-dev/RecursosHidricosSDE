@@ -14,6 +14,13 @@ if (token) {
   console.log("🔄 Sin token, necesitas hacer login");
 }
 
+const THEME_KEY = 'app:theme';
+const storedTheme = localStorage.getItem(THEME_KEY);
+const preferredTheme = storedTheme === 'dark' ? 'dark' : 'light';
+
+document.documentElement.classList.toggle('dark', preferredTheme === 'dark');
+document.documentElement.style.colorScheme = preferredTheme === 'dark' ? 'dark' : 'light';
+
 const root = document.getElementById("root");
 if (root) {
   ReactDOM.createRoot(root).render(<App />);

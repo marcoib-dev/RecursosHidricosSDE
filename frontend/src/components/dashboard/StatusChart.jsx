@@ -33,8 +33,8 @@ const StatusChart = ({ chartData }) => {
   const hasData = data.some(d => d.value > 0);
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-gray-200 h-full">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribución por Estado</h3>
+    <div className="bg-white rounded-xl p-6 border border-gray-200 h-full dark:bg-slate-900 dark:border-slate-800">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 dark:text-gray-100">Distribución por Estado</h3>
       {hasData ? (
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
@@ -57,7 +57,7 @@ const StatusChart = ({ chartData }) => {
           </PieChart>
         </ResponsiveContainer>
       ) : (
-        <div className="h-[300px] flex items-center justify-center text-gray-400">
+        <div className="h-[300px] flex items-center justify-center text-gray-400 dark:text-gray-500">
           No hay datos para mostrar
         </div>
       )}

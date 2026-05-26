@@ -253,10 +253,10 @@ export default function AuditPage() {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Shield className="w-6 h-6 text-blue-600" /> Registro de Auditoría
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2 dark:text-gray-100">
+              <Shield className="w-6 h-6 text-blue-600 dark:text-cyan-400" /> Registro de Auditoría
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
               {total} registro{total !== 1 ? 's' : ''} de actividad del sistema
             </p>
           </div>
@@ -270,19 +270,19 @@ export default function AuditPage() {
           className="flex flex-wrap gap-3"
         >
           <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por acción o usuario..."
-              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-gray-100 dark:placeholder:text-gray-500"
             />
           </div>
           <select
             value={filterEntidad}
             onChange={(e) => setFilterEntidad(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-gray-100"
           >
             <option value="all">Todas las entidades</option>
             <option value="obra">Obras</option>
@@ -292,7 +292,7 @@ export default function AuditPage() {
           {(search || filterEntidad !== 'all') && (
             <button
               onClick={() => { setSearch(''); setFilterEntidad('all'); }}
-              className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors dark:text-red-300 dark:hover:bg-red-950/30"
             >
               <X className="w-3.5 h-3.5" /> Limpiar
             </button>
@@ -304,15 +304,15 @@ export default function AuditPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden dark:bg-slate-900 dark:border-slate-800"
         >
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
             </div>
           ) : registros.length === 0 ? (
-            <div className="text-center py-20 text-gray-500">
-              <Activity className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <div className="text-center py-20 text-gray-500 dark:text-gray-400">
+              <Activity className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
               <p className="font-medium">No se encontraron registros</p>
               <p className="text-sm mt-1">Probá con otros filtros</p>
             </div>
@@ -320,16 +320,16 @@ export default function AuditPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/60">
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Fecha</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Usuario</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Acción</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Entidad</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Detalles</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">IP</th>
+                  <tr className="border-b border-gray-100 bg-gray-50/60 dark:border-slate-800 dark:bg-slate-800/70">
+                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3 dark:text-gray-300">Fecha</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3 dark:text-gray-300">Usuario</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3 dark:text-gray-300">Acción</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3 dark:text-gray-300">Entidad</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3 dark:text-gray-300">Detalles</th>
+                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3 dark:text-gray-300">IP</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
                   {registros.map((reg) => {
                     const ctx = parseContexto(reg.contexto);
                     const isHighlighted = highlightId === reg.id;
@@ -346,55 +346,55 @@ export default function AuditPage() {
                             setSelectedRegistro(reg);
                           }
                         }}
-                        className={`cursor-pointer transition-colors ${isHighlighted ? 'bg-cyan-50 ring-1 ring-cyan-200' : 'hover:bg-gray-50/50'}`}
+                        className={`cursor-pointer transition-colors ${isHighlighted ? 'bg-cyan-50 ring-1 ring-cyan-200 dark:bg-cyan-950/30 dark:ring-cyan-900' : 'hover:bg-gray-50/50 dark:hover:bg-slate-800/80'}`}
                       >
-                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap dark:text-gray-300">
                           <div className="flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-gray-400" />
+                            <Clock className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                             {formatFecha(reg.fecha)}
                           </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
+                            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 dark:bg-slate-700 dark:text-gray-200">
                               {reg.usuario_nombre?.[0]}{reg.usuario_apellido?.[0]}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-900">
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                 {reg.usuario_nombre} {reg.usuario_apellido}
                               </p>
-                              <p className={`text-xs ${ROL_COLORS[reg.usuario_rol] || 'text-gray-500'}`}>
+                              <p className={`text-xs ${ROL_COLORS[reg.usuario_rol] || 'text-gray-500'} dark:!text-cyan-300`}>
                                 {reg.usuario_rol?.replace('_', ' ')}
                               </p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${ACCION_COLORS[reg.titulo] || 'bg-gray-100 text-gray-600'}`}>
+                          <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${ACCION_COLORS[reg.titulo] || 'bg-gray-100 text-gray-600'} dark:border dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100`}>
                             {reg.titulo?.replace(/_/g, ' ')}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                           {ENTIDAD_LABELS[reg.entidad] || reg.entidad}
-                          {reg.entidad_id && <span className="text-gray-400 ml-1">#{reg.entidad_id}</span>}
+                          {reg.entidad_id && <span className="text-gray-400 ml-1 dark:text-gray-500">#{reg.entidad_id}</span>}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500 max-w-[300px] align-top">
+                        <td className="px-4 py-3 text-sm text-gray-500 max-w-[300px] align-top dark:text-gray-300">
                           <div className="flex flex-col items-start gap-2 max-w-full">
                             <div className="space-y-1 max-w-full">
                               {reg.titulo === 'ACTUALIZAR_OBRA' && ctx?.cambios && Array.isArray(ctx.cambios) && ctx.cambios.length > 0 ? (
                                 <>
                                   {ctx.cambios.slice(0, 2).map((cambio, i) => (
                                     <div key={i} className="text-xs leading-4 break-words">
-                                      <span className="font-medium text-gray-700">{cambio.campo}:</span>
-                                      <span className="text-gray-500"> {cambio.anterior} → {cambio.nuevo}</span>
+                                      <span className="font-medium text-gray-700 dark:text-gray-200">{cambio.campo}:</span>
+                                      <span className="text-gray-500 dark:text-gray-400"> {cambio.anterior} → {cambio.nuevo}</span>
                                     </div>
                                   ))}
                                   {ctx.cambios.length > 2 && (
-                                    <div className="text-xs text-gray-400">+{ctx.cambios.length - 2} más</div>
+                                    <div className="text-xs text-gray-400 dark:text-gray-500">+{ctx.cambios.length - 2} más</div>
                                   )}
                                 </>
                               ) : (
-                                <span className="max-w-full break-words leading-5 text-gray-600">
+                                <span className="max-w-full break-words leading-5 text-gray-600 dark:text-gray-300">
                                   {ctx?.nombre || ctx?.correo || ctx?.filename || '—'}
                                 </span>
                               )}
@@ -406,14 +406,14 @@ export default function AuditPage() {
                                 e.stopPropagation();
                                 setSelectedRegistro(reg);
                               }}
-                              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-medium text-cyan-700 hover:bg-cyan-100"
+                                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-medium text-cyan-700 hover:bg-cyan-100 dark:border-cyan-900/60 dark:bg-cyan-950/30 dark:text-cyan-200 dark:hover:bg-cyan-900/40"
                             >
                               <Eye className="h-3.5 w-3.5" />
                               Ver más
                             </button>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
+                        <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap dark:text-gray-500">
                           <div className="flex items-center gap-1">
                             <Globe className="w-3 h-3" />
                             {reg.ip_address || '—'}
@@ -429,15 +429,15 @@ export default function AuditPage() {
 
           {/* Paginación */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/40">
-              <p className="text-sm text-gray-500">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/40 dark:border-slate-800 dark:bg-slate-900/70">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Página {page} de {totalPages} ({total} registros)
               </p>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="p-1.5 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:hover:bg-slate-800"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -457,7 +457,7 @@ export default function AuditPage() {
                       key={pageNum}
                       onClick={() => setPage(pageNum)}
                       className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                        page === pageNum ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 text-gray-600'
+                        page === pageNum ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 text-gray-600 dark:text-gray-300 dark:hover:bg-slate-800'
                       }`}
                     >
                       {pageNum}
@@ -467,7 +467,7 @@ export default function AuditPage() {
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="p-1.5 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:hover:bg-slate-800"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -477,74 +477,74 @@ export default function AuditPage() {
         </motion.div>
 
         <Dialog open={Boolean(selectedRegistro)} onOpenChange={(open) => !open && setSelectedRegistro(null)}>
-          <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto border-cyan-100">
+          <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto border-cyan-100 dark:border-slate-700 dark:bg-slate-900">
             {selectedRegistro && (
               <>
                 <DialogHeader className="text-left">
-                  <DialogTitle className="flex items-center gap-2 text-2xl text-gray-900">
-                    <Shield className="h-5 w-5 text-cyan-600" />
+                  <DialogTitle className="flex items-center gap-2 text-2xl text-gray-900 dark:text-gray-100">
+                    <Shield className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                     Detalle de auditoría
                   </DialogTitle>
-                  <DialogDescription className="text-gray-600">
+                  <DialogDescription className="text-gray-600 dark:text-gray-400">
                     Resumen simple del cambio para revisar rápido qué pasó.
                   </DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">Acción</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">{selectedDetails?.titulo || '—'}</p>
-                    <p className="mt-1 text-sm text-gray-600">{selectedDetails?.resumen || '—'}</p>
+                  <div className="rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4 dark:border-cyan-900/50 dark:bg-cyan-950/25">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-300">Acción</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{selectedDetails?.titulo || '—'}</p>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{selectedDetails?.resumen || '—'}</p>
                   </div>
 
-                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Usuario</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">{selectedDetails?.usuario || '—'}</p>
-                    <p className="mt-1 text-sm text-gray-600">{selectedDetails?.rol || '—'}</p>
+                  <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Usuario</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{selectedDetails?.usuario || '—'}</p>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{selectedDetails?.rol || '—'}</p>
                   </div>
 
-                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Entidad</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">
+                  <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Entidad</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
                       {selectedDetails?.entidad || '—'}
                     </p>
-                    <p className="mt-1 text-sm text-gray-600">ID: {selectedDetails?.entidadId || '—'}</p>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">ID: {selectedDetails?.entidadId || '—'}</p>
                   </div>
 
-                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Fecha e IP</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">{selectedDetails?.fecha || '—'}</p>
-                    <p className="mt-1 text-sm text-gray-600">{selectedDetails?.ip || '—'}</p>
+                  <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Fecha e IP</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{selectedDetails?.fecha || '—'}</p>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{selectedDetails?.ip || '—'}</p>
                   </div>
                 </div>
 
                 {selectedDetails?.cambios?.length > 0 && (
-                  <div className="rounded-2xl border border-cyan-100 bg-cyan-50/50 p-4">
+                  <div className="rounded-2xl border border-cyan-100 bg-cyan-50/50 p-4 dark:border-cyan-900/50 dark:bg-cyan-950/20">
                     <div className="mb-3 flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-cyan-700" />
-                      <p className="text-sm font-semibold text-gray-900">Cambios detectados</p>
+                      <FileText className="h-4 w-4 text-cyan-700 dark:text-cyan-300" />
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Cambios detectados</p>
                     </div>
                     <div className="space-y-3">
                       {selectedDetails.cambios.map((cambio, index) => (
-                        <div key={cambio.key} className="rounded-xl border border-cyan-100 bg-white p-3">
+                        <div key={cambio.key} className="rounded-xl border border-cyan-100 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="font-semibold text-gray-900">{cambio.campo}</p>
-                            <span className="text-xs text-gray-400">Cambio {index + 1}</span>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100">{cambio.campo}</p>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">Cambio {index + 1}</span>
                           </div>
                           <div className="mt-2 grid gap-2 md:grid-cols-2">
-                            <div className="rounded-lg bg-red-50 p-2">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-red-700">Antes</p>
-                              <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-700">{cambio.anterior}</p>
+                            <div className="rounded-lg bg-red-50 p-2 dark:bg-red-950/30">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">Antes</p>
+                              <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-200">{cambio.anterior}</p>
                             </div>
-                            <div className="rounded-lg bg-emerald-50 p-2">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Después</p>
-                              <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-700">{cambio.nuevo}</p>
+                            <div className="rounded-lg bg-emerald-50 p-2 dark:bg-emerald-950/30">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Después</p>
+                              <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-200">{cambio.nuevo}</p>
                             </div>
                           </div>
                         </div>
                       ))}
                       {selectedDetails.totalCambios > selectedDetails.cambios.length && (
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                           Se muestran los primeros {selectedDetails.cambios.length} cambios de {selectedDetails.totalCambios}.
                         </p>
                       )}
@@ -556,7 +556,7 @@ export default function AuditPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedRegistro(null)}
-                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:text-gray-200 dark:hover:bg-slate-800"
                   >
                     Cerrar
                   </button>
