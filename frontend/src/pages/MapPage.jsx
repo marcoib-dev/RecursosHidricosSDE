@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Filter, Layers, X, ChevronDown, Building2, Droplets } from 'lucide-react';
+import { MapPin, Filter, Layers, X, Maximize2, Minimize2, Building2, Droplets } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { obrasAPI } from '../services/api';
 
 // Colores por estado para los markers
@@ -94,12 +95,137 @@ function FitBounds({ obras }) {
   return null;
 }
 
+function ObrasMapContent({ obrasEnMapa, defaultCenter }) {
+  return (
+    <>
+      <MapContainer
+        center={defaultCenter}
+        zoom={4}
+        minZoom={4}
+        maxBounds={ARGENTINA_BOUNDS}
+        maxBoundsViscosity={1.0}
+        className="h-full w-full"
+        zoomControl={true}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/">OSM</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <FitBounds obras={obrasEnMapa} />
+
+        {obrasEnMapa.map((obra) => (
+          <Marker
+            key={obra.id}
+            position={[parseFloat(obra.latitud), parseFloat(obra.longitud)]}
+            icon={createColoredIcon(ESTADO_COLORS[obra.estado] || '#6b7280', obra.tipo)}
+          >
+            <Popup maxWidth={280}>
+              <div className="min-w-[200px]">
+                <h3 className="font-bold text-base text-gray-900 mb-1">{obra.nombre}</h3>
+                <div className="space-y-1 text-sm">
+                  <p className="flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-gray-600">{TIPO_LABELS[obra.tipo] || obra.tipo}</span>
+                  </p>
+                  <p className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-gray-600">{obra.localidad || obra.ubicacion || '—'}</span>
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span
+                      className="inline-block w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: ESTADO_COLORS[obra.estado] }}
+                    />
+                    <span className="font-medium" style={{ color: ESTADO_COLORS[obra.estado] }}>
+                      {ESTADO_LABELS[obra.estado] || obra.estado}
+                    </span>
+                  </div>
+                  {obra.porcentaje_avance != null && (
+                    <div className="mt-2">
+                      <div className="flex justify-between text-xs text-gray-500 mb-0.5">
+                        <span>Avance</span>
+                        <span>{obra.porcentaje_avance}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-blue-500"
+                          style={{ width: `${obra.porcentaje_avance}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <a
+                    href={`/plantas/${obra.id}`}
+                    className="inline-block mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Ver detalle →
+                  </a>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+
+      <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur rounded-lg shadow-lg border border-gray-200 p-3 z-[1000]">
+        <div className="space-y-1">
+          {[
+            ['en_funcionamiento', 'En funcionamiento'],
+            ['en_construccion', 'En construcción'],
+            ['en_reparacion', 'En reparación'],
+            ['fuera_de_servicio', 'Fuera de servicio'],
+          ].map(([key, label]) => (
+            <div key={key} className="flex items-center gap-2 text-xs text-gray-600">
+              <span
+                className="w-3 h-3 rounded-full border border-white shadow-sm flex-shrink-0"
+                style={{ backgroundColor: ESTADO_COLORS[key] }}
+              />
+              {label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ObrasMapPanel({ obrasEnMapa, defaultCenter, loading, onExpand, showExpandButton = true, panelClassName = '' }) {
+  return (
+    <div className={`flex-1 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative ${panelClassName}`}>
+      {loading ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-sm text-gray-500">Cargando mapa...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <ObrasMapContent obrasEnMapa={obrasEnMapa} defaultCenter={defaultCenter} />
+          {showExpandButton && onExpand && (
+            <button
+              type="button"
+              onClick={onExpand}
+              className="absolute top-3 right-3 z-[1001] inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-lg transition hover:bg-white hover:text-blue-600"
+              title="Expandir mapa"
+              aria-label="Expandir mapa"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function MapPage() {
   const [obras, setObras] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterEstado, setFilterEstado] = useState('all');
   const [filterTipo, setFilterTipo] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [mapExpanded, setMapExpanded] = useState(false);
 
   useEffect(() => {
     loadObras();
@@ -219,106 +345,49 @@ export default function MapPage() {
         )}
 
         {/* Mapa */}
-        <div className="flex-1 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
-          {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
-              <div className="text-center">
-                <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-sm text-gray-500">Cargando mapa...</p>
-              </div>
-            </div>
-          ) : (
-            <MapContainer
-              center={defaultCenter}
-              zoom={4}
-              minZoom={4}
-              maxBounds={ARGENTINA_BOUNDS}
-              maxBoundsViscosity={1.0}
-              style={{ height: '100%', width: '100%' }}
-              zoomControl={true}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/">OSM</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        <ObrasMapPanel
+          obrasEnMapa={obrasEnMapa}
+          defaultCenter={defaultCenter}
+          loading={loading}
+          onExpand={() => setMapExpanded(true)}
+        />
+      </div>
+
+      <Dialog open={mapExpanded} onOpenChange={setMapExpanded}>
+        <DialogContent className="max-w-7xl w-[95vw] h-[90vh] overflow-hidden p-0 sm:rounded-2xl">
+          <div className="flex h-full min-h-0 flex-col">
+            <DialogHeader className="px-6 pt-6 pb-4 pr-14 border-b border-gray-200 text-left">
+              <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-gray-900">
+                <MapPin className="h-5 w-5 text-blue-600" />
+                Mapa de Obras Hídricas
+              </DialogTitle>
+              <p className="text-sm text-gray-500">
+                Vista ampliada para explorar el mapa con más espacio.
+              </p>
+            </DialogHeader>
+            <div className="relative min-h-0 flex-1 p-4">
+              <ObrasMapPanel
+                obrasEnMapa={obrasEnMapa}
+                defaultCenter={defaultCenter}
+                loading={loading}
+                showExpandButton={false}
+                panelClassName="h-full"
               />
-              <FitBounds obras={obrasEnMapa} />
-
-              {obrasEnMapa.map((obra) => (
-                <Marker
-                  key={obra.id}
-                  position={[parseFloat(obra.latitud), parseFloat(obra.longitud)]}
-                  icon={createColoredIcon(ESTADO_COLORS[obra.estado] || '#6b7280', obra.tipo)}
+              {!loading && (
+                <button
+                  type="button"
+                  onClick={() => setMapExpanded(false)}
+                  className="absolute top-7 right-7 z-[1001] inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-lg transition hover:bg-white hover:text-blue-600"
+                  title="Volver a tamaño normal"
+                  aria-label="Volver a tamaño normal"
                 >
-                  <Popup maxWidth={280}>
-                    <div className="min-w-[200px]">
-                      <h3 className="font-bold text-base text-gray-900 mb-1">{obra.nombre}</h3>
-                      <div className="space-y-1 text-sm">
-                        <p className="flex items-center gap-1.5">
-                          <Layers className="w-3.5 h-3.5 text-gray-400" />
-                          <span className="text-gray-600">{TIPO_LABELS[obra.tipo] || obra.tipo}</span>
-                        </p>
-                        <p className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                          <span className="text-gray-600">{obra.localidad || obra.ubicacion || '—'}</span>
-                        </p>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span
-                            className="inline-block w-2.5 h-2.5 rounded-full"
-                            style={{ backgroundColor: ESTADO_COLORS[obra.estado] }}
-                          />
-                          <span className="font-medium" style={{ color: ESTADO_COLORS[obra.estado] }}>
-                            {ESTADO_LABELS[obra.estado] || obra.estado}
-                          </span>
-                        </div>
-                        {obra.porcentaje_avance != null && (
-                          <div className="mt-2">
-                            <div className="flex justify-between text-xs text-gray-500 mb-0.5">
-                              <span>Avance</span>
-                              <span>{obra.porcentaje_avance}%</span>
-                            </div>
-                            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-blue-500"
-                                style={{ width: `${obra.porcentaje_avance}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        <a
-                          href={`/plantas/${obra.id}`}
-                          className="inline-block mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          Ver detalle →
-                        </a>
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          )}
-
-          {/* Leyenda */}
-          <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur rounded-lg shadow-lg border border-gray-200 p-3 z-[1000]">
-            <div className="space-y-1">
-              {[
-                ['en_funcionamiento', 'En funcionamiento'],
-                ['en_construccion', 'En construcción'],
-                ['en_reparacion', 'En reparación'],
-                ['fuera_de_servicio', 'Fuera de servicio'],
-              ].map(([key, label]) => (
-                <div key={key} className="flex items-center gap-2 text-xs text-gray-600">
-                  <span
-                    className="w-3 h-3 rounded-full border border-white shadow-sm flex-shrink-0"
-                    style={{ backgroundColor: ESTADO_COLORS[key] }}
-                  />
-                  {label}
-                </div>
-              ))}
+                  <Minimize2 className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
