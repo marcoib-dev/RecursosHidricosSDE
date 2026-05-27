@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { getRolLabel } from "@/lib/permissions";
 import { notificacionesAPI } from "@/services/api";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LayoutDashboard, Droplet, Menu, X, LogOut, Users, ShieldCheck, MapPin, User, Shield, Bell, AlertTriangle, CheckCircle } from "lucide-react";
+import { LayoutDashboard, Droplet, Menu, X, LogOut, Users, ShieldCheck, MapPin, User, Shield, Bell, AlertTriangle, CheckCircle, MoonStar, SunMedium } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Logo from "../icons/logo.svg";
 
@@ -23,6 +24,7 @@ const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, permisos, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificaciones, setNotificaciones] = useState([]);
   const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
@@ -308,6 +310,23 @@ const DashboardLayout = ({ children }) => {
                       </div>
                     </div>
                   </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={toggleTheme}
+                    className="cursor-pointer dark:text-gray-100 dark:focus:bg-slate-800 dark:focus:text-gray-100"
+                  >
+                    {theme === 'dark' ? (
+                      <>
+                        <SunMedium className="w-4 h-4 mr-2" />
+                        Modo claro
+                      </>
+                    ) : (
+                      <>
+                        <MoonStar className="w-4 h-4 mr-2" />
+                        Modo oscuro
+                      </>
+                    )}
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate('/perfil')}>
                     <User className="w-4 h-4 mr-2" />

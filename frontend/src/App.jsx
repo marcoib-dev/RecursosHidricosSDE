@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { ThemeProvider, ThemeToggleButton } from '@/contexts/ThemeContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
@@ -41,7 +41,6 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <Router>
-            <ThemeToggleButton />
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />

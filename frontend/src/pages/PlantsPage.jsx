@@ -39,6 +39,29 @@ const PlantsPage = () => {
   const [tipoFilter, setTipoFilter] = useState(searchParams.get('tipo') || "all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingObra, setEditingObra] = useState(null);
+  const [cols, setCols] = useState(() => {
+    try {
+      const saved = localStorage.getItem('obras_grid_cols');
+      if (!saved) return 3;
+      const n = Number(saved);
+      return n === 5 ? 5 : 3;
+    } catch (e) {
+      return 3;
+    }
+  });
+  const [effectiveCols, setEffectiveCols] = useState(cols);
+
+  useEffect(() => {
+    const updateCols = () => {
+      const w = window.innerWidth;
+      if (w < 640) setEffectiveCols(1);
+      else if (w < 768) setEffectiveCols(Math.min(2, cols));
+      else setEffectiveCols(cols);
+    };
+    updateCols();
+    window.addEventListener('resize', updateCols);
+    return () => window.removeEventListener('resize', updateCols);
+  }, [cols]);
 
   useEffect(() => {
     filterObras();
@@ -159,6 +182,28 @@ const PlantsPage = () => {
                 <Download className="w-4 h-4 mr-2" />
                 Exportar CSV
               </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={cols === 5 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setCols(5);
+                    try { localStorage.setItem('obras_grid_cols', '5'); } catch(e){}
+                  }}
+                >
+                  Compacto
+                </Button>
+                <Button
+                  variant={cols === 3 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setCols(3);
+                    try { localStorage.setItem('obras_grid_cols', '3'); } catch(e){}
+                  }}
+                >
+                  Medio
+                </Button>
+              </div>
               {permisos?.crearObra && (
                 <Button
                   onClick={() => {
@@ -235,7 +280,7 @@ const PlantsPage = () => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${effectiveCols}, minmax(0, 1fr))` }}>
               {filteredObras.map((obra, index) => (
                 <motion.div
                   key={obra.id}

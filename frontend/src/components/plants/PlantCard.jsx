@@ -110,12 +110,12 @@ const PlantCard = ({ plant, onEdit, onDelete, onClick }) => {
         </div>
 
         {(onEdit || onDelete) && (
-          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex gap-2 items-center mb-1" onClick={(e) => e.stopPropagation()}>
             {onEdit && (
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1"
+                className="min-w-0 whitespace-nowrap"
                 onClick={(e) => {
                   e.stopPropagation();
                   onEdit(plant);
@@ -129,7 +129,7 @@ const PlantCard = ({ plant, onEdit, onDelete, onClick }) => {
               <Button
                 variant="destructive"
                 size="sm"
-                className="flex-1"
+                className="min-w-0 whitespace-nowrap"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowDeleteDialog(true);
