@@ -25,6 +25,8 @@ const ESTADO_LABELS = {
   fuera_de_servicio: 'Fuera de servicio',
 };
 
+const ESTADOS_CON_AVANCE = ['en_reparacion', 'fuera_de_servicio', 'en_construccion'];
+
 const TIPO_LABELS = {
   pozo: 'Pozo',
   planta: 'Planta',
@@ -140,7 +142,7 @@ function ObrasMapContent({ obrasEnMapa, defaultCenter }) {
                       {ESTADO_LABELS[obra.estado] || obra.estado}
                     </span>
                   </div>
-                  {obra.porcentaje_avance != null && (
+                  {ESTADOS_CON_AVANCE.includes(obra.estado) && obra.porcentaje_avance != null && (
                     <div className="mt-2">
                       <div className="flex justify-between text-xs text-gray-500 mb-0.5">
                         <span>Avance</span>

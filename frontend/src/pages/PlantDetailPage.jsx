@@ -42,6 +42,8 @@ const ESTADO_LABELS = {
   finalizada: 'Finalizada',
 };
 
+const ESTADOS_CON_AVANCE = ['en_reparacion', 'fuera_de_servicio', 'en_construccion'];
+
 const PlantDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -251,7 +253,7 @@ const PlantDetailPage = () => {
                     </div>
                   </div>
                 )}
-                {obra.porcentaje_avance !== undefined && (
+                {ESTADOS_CON_AVANCE.includes(obra.estado) && obra.porcentaje_avance !== undefined && (
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Avance: {obra.porcentaje_avance}%</p>
                     <div className="w-full bg-gray-200 rounded-full h-3">

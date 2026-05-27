@@ -53,6 +53,8 @@ const defaultForm = {
   volumen_represa: '',
 };
 
+const ESTADOS_CON_AVANCE = ['en_reparacion', 'fuera_de_servicio', 'en_construccion'];
+
 const parseNumberInput = (value) => (value === '' ? '' : Number(value));
 
 function buildAddressQuery(ubicacion, localidad) {
@@ -232,6 +234,7 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const mostrarCampoAvance = ESTADOS_CON_AVANCE.includes(formData.estado);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -563,17 +566,19 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="porcentaje_avance">% Avance</Label>
-              <Input
-                id="porcentaje_avance"
-                type="number"
-                min="0"
-                max="100"
-                value={formData.porcentaje_avance}
-                onChange={(e) => setFormData({ ...formData, porcentaje_avance: parseNumberInput(e.target.value) })}
-              />
-            </div>
+            {mostrarCampoAvance && (
+              <div className="space-y-2">
+                <Label htmlFor="porcentaje_avance">% Avance</Label>
+                <Input
+                  id="porcentaje_avance"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.porcentaje_avance}
+                  onChange={(e) => setFormData({ ...formData, porcentaje_avance: parseNumberInput(e.target.value) })}
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="latitud">Latitud</Label>

@@ -25,8 +25,11 @@ const ESTADO_LABELS = {
   finalizada: 'Finalizada',
 };
 
+const ESTADOS_CON_AVANCE = ['en_reparacion', 'fuera_de_servicio', 'en_construccion'];
+
 const PlantCard = ({ plant, onEdit, onDelete, onClick }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const mostrarAvance = ESTADOS_CON_AVANCE.includes(plant.estado);
 
   const statusColors = {
     en_funcionamiento: 'bg-green-100 text-green-800 border-green-200',
@@ -76,7 +79,7 @@ const PlantCard = ({ plant, onEdit, onDelete, onClick }) => {
         <Badge className={`absolute top-4 right-4 ${statusColors[plant.estado] || 'bg-gray-100 text-gray-800'}`}>
           {ESTADO_LABELS[plant.estado] || plant.estado}
         </Badge>
-        {plant.porcentaje_avance !== undefined && plant.porcentaje_avance < 100 && (
+        {mostrarAvance && plant.porcentaje_avance !== undefined && plant.porcentaje_avance < 100 && (
           <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-40 px-4 py-2">
             <div className="flex justify-between text-white text-xs mb-1">
               <span>Avance</span>

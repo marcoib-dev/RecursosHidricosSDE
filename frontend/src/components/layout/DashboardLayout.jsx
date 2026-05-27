@@ -171,14 +171,17 @@ const DashboardLayout = ({ children }) => {
                 )}
               </button>
               <div className="flex items-center space-x-2 ml-2 lg:ml-0">
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard')}
+                  className="flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/70 rounded-md"
+                  aria-label="Ir al dashboard"
                 >
                   <img src={Logo} alt="Logo" width={32} height={32} />
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent dark:from-cyan-300 dark:to-teal-200">
                     Recursos Hidricos de SDE
                   </h1>
-                </div>
+                </button>
               </div>
             </div>
 

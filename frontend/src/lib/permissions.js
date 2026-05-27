@@ -9,9 +9,9 @@
  * ADMINISTRADOR  – Acceso total: CRUD obras, gestión de usuarios, auditoría, archivos
  * PRESIDENTE     – Supervisión general: ver todo, crear/editar/eliminar obras, ver auditoría
  * INSPECTOR      – Inspección en campo: ver obras, subir informes/archivos, NO editar obras
- * DPT_CONSTRUCCION – Departamento Construcción: crear y editar obras de tipo pozo/planta, subir archivos
+ * DPT_CONSTRUCCION – Departamento Construcción: crear y editar todas las obras, subir archivos
  * DPT_ESTUDIOS     – Departamento Estudios: crear y editar obras (estudios), subir archivos
- * DPT_CONSERVACION – Departamento Conservación: ver obras, subir informes de conservación, NO crear/editar
+ * DPT_CONSERVACION – Departamento Conservación: ver obras, editar todas las obras, subir informes de conservación
  */
 
 const PERMISOS = {
@@ -66,7 +66,7 @@ const PERMISOS = {
     verObras:         true,
     crearObra:        true,
     editarObra:       true,
-    editarSoloSuyas:  true,   // solo las que creó
+    editarSoloSuyas:  false,
     eliminarObra:     false,
     subirArchivos:    true,
     eliminarArchivos: true,
@@ -95,7 +95,7 @@ const PERMISOS = {
     dashboard:        true,
     verObras:         true,
     crearObra:        false,
-    editarObra:       false,
+    editarObra:       true,
     editarSoloSuyas:  false,
     eliminarObra:     false,
     subirArchivos:    true,   // informes de conservación
