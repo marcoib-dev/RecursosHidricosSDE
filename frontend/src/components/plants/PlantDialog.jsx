@@ -42,11 +42,15 @@ const defaultForm = {
   profundidad: '',
   caudal: '',
   tipo_bomba: '',
+  altura_tanque: '',
+  capacidad_tanque: '',
+  diametro_pozo: '',
   contaminantes: '',
   // Campos específicos de planta
   tratamiento: '',
   capacidad: '',
   fuente: '',
+  volumen_represa: '',
 };
 
 const parseNumberInput = (value) => (value === '' ? '' : Number(value));
@@ -242,9 +246,13 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
         caudal: plant.pozo?.caudal || plant.caudal || '',
         tipo_bomba: plant.pozo?.tipo_bomba || plant.tipo_bomba || '',
         contaminantes: plant.pozo?.contaminantes || plant.contaminantes || '',
+        altura_tanque: plant.pozo?.altura_tanque || plant.altura_tanque || '',
+        capacidad_tanque: plant.pozo?.capacidad_tanque || plant.capacidad_tanque || '',
+        diametro_pozo: plant.pozo?.diametro_pozo || plant.diametro_pozo || '',
         tratamiento: plant.planta?.tratamiento || plant.tratamiento || '',
         capacidad: plant.planta?.capacidad || plant.capacidad || '',
         fuente: plant.planta?.fuente || plant.fuente || '',
+        volumen_represa: plant.planta?.volumen_represa || plant.volumen_represa || '',
       });
     } else {
       setFormData(defaultForm);
@@ -527,7 +535,7 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="responsable">Responsable *</Label>
+              <Label htmlFor="responsable">Nombre del operario *</Label>
               <Input
                 id="responsable"
                 value={formData.responsable}
@@ -647,6 +655,36 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
                     onChange={(e) => setFormData({ ...formData, contaminantes: e.target.value })}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="altura_tanque">Altura del tanque (m)</Label>
+                  <Input
+                    id="altura_tanque"
+                    type="number"
+                    step="any"
+                    value={formData.altura_tanque}
+                    onChange={(e) => setFormData({ ...formData, altura_tanque: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="capacidad_tanque">Capacidad del tanque (m³)</Label>
+                  <Input
+                    id="capacidad_tanque"
+                    type="number"
+                    step="any"
+                    value={formData.capacidad_tanque}
+                    onChange={(e) => setFormData({ ...formData, capacidad_tanque: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="diametro_pozo">Diámetro del pozo (m)</Label>
+                  <Input
+                    id="diametro_pozo"
+                    type="number"
+                    step="any"
+                    value={formData.diametro_pozo}
+                    onChange={(e) => setFormData({ ...formData, diametro_pozo: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -665,7 +703,7 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="capacidad">Capacidad (m³/día)</Label>
+                  <Label htmlFor="capacidad">Capacidad (m³/h)</Label>
                   <Input
                     id="capacidad"
                     type="number"
@@ -675,11 +713,21 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="fuente">Fuente de Agua</Label>
+                  <Label htmlFor="fuente">Represa de la que se abastece</Label>
                   <Input
                     id="fuente"
                     value={formData.fuente}
                     onChange={(e) => setFormData({ ...formData, fuente: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="volumen_represa">Volumen de la represa (m³)</Label>
+                  <Input
+                    id="volumen_represa"
+                    type="number"
+                    step="any"
+                    value={formData.volumen_represa}
+                    onChange={(e) => setFormData({ ...formData, volumen_represa: e.target.value })}
                   />
                 </div>
               </div>
