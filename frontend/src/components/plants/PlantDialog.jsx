@@ -16,7 +16,8 @@ const ARGENTINA_BOUNDS = [
   [-21.8, -53.6],
 ];
 
-const ARGENTINA_CENTER = [-38.4161, -63.6167];
+const SANTIAGO_DEL_ESTERO_CENTER = [-27.7951, -64.2615];
+const LOCATION_PICKER_ZOOM = 11;
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -201,7 +202,7 @@ function LocationPickerMap({ position, onPickLocation }) {
   return (
     <MapContainer
       center={markerPosition}
-      zoom={hasPosition ? 14 : 5}
+      zoom={hasPosition ? 14 : LOCATION_PICKER_ZOOM}
       minZoom={4}
       maxBounds={ARGENTINA_BOUNDS}
       maxBoundsViscosity={1.0}
@@ -227,7 +228,7 @@ function LocationPickerMap({ position, onPickLocation }) {
   );
 }
 
-const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
+const PlantDialog = ({ open, onOpenChange, plant, onSave, initialCoordinates = null }) => {
   const [formData, setFormData] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
   const [searchingLocation, setSearchingLocation] = useState(false);
@@ -258,9 +259,51 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave }) => {
         volumen_represa: plant.planta?.volumen_represa || plant.volumen_represa || '',
       });
     } else {
-      setFormData(defaultForm);
+      setFormData({
+        ...defaultForm,
+        latitud: Number.isFinite(initialCoordinates?.lat) ? initialCoordinates.lat : defaultForm.latitud,
+        longitud: Number.isFinite(initialCoordinates?.lng) ? initialCoordinates.lng : defaultForm.longitud,
+      });
     }
-  }, [plant, open]);
+  }, [plant, open, initialCoordinates]);
+
+  useEffect(() => {
+    if (!open || plant || !Number.isFinite(initialCoordinates?.lat) || !Number.isFinite(initialCoordinates?.lng)) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const applyCoordinates = async () => {
+      try {
+        const result = await reverseGeocodeArgentina(initialCoordinates.lat, initialCoordinates.lng);
+        if (cancelled) return;
+
+        if (result) {
+          setFormData((current) => ({
+            ...current,
+            latitud: initialCoordinates.lat,
+            longitud: initialCoordinates.lng,
+            ubicacion: result.ubicacion || current.ubicacion,
+            localidad: result.localidad || current.localidad,
+          }));
+        }
+      } catch (error) {
+        if (cancelled) return;
+        setFormData((current) => ({
+          ...current,
+          latitud: initialCoordinates.lat,
+          longitud: initialCoordinates.lng,
+        }));
+      }
+    };
+
+    applyCoordinates();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, plant, initialCoordinates]);
 
   useEffect(() => {
     if (!open) {

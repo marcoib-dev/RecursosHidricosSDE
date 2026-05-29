@@ -1,11 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Filter, Layers, X, Maximize2, Minimize2, Building2, Droplets } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapPin, Filter, Layers, X, Maximize2, Minimize2, Building2, Droplets, Plus } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Button } from '../components/ui/button';
+import PlantDialog from '../components/plants/PlantDialog';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/ui/use-toast';
 import { obrasAPI } from '../services/api';
 
 // Colores por estado para los markers
@@ -37,7 +41,9 @@ const ARGENTINA_BOUNDS = [
   [-21.8, -53.6],
 ];
 
-const ARGENTINA_CENTER = [-38.4161, -63.6167];
+const SANTIAGO_DEL_ESTERO_CENTER = [-27.7951, -64.2615];
+
+const LOCATION_PICKER_ZOOM = 6;
 
 function normalizeTipo(tipo) {
   const normalized = String(tipo || '').toLowerCase();
@@ -79,6 +85,60 @@ function createColoredIcon(color, tipo = 'otro') {
     iconAnchor: [15, 44],
     popupAnchor: [0, -44],
   });
+}
+
+function LocationPickerEvents({ position, onPickLocation }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (position && Number.isFinite(position[0]) && Number.isFinite(position[1])) {
+      map.setView(position, 14, { animate: true });
+    }
+  }, [map, position?.[0], position?.[1]]);
+
+  useMapEvents({
+    click(event) {
+      onPickLocation(event.latlng.lat, event.latlng.lng);
+    },
+  });
+
+  return null;
+}
+
+function LocationSelectionMap({ position, onPickLocation }) {
+  const hasPosition = position && Number.isFinite(position[0]) && Number.isFinite(position[1]);
+  const markerPosition = hasPosition ? position : null;
+
+  return (
+    <MapContainer
+      center={SANTIAGO_DEL_ESTERO_CENTER}
+      zoom={LOCATION_PICKER_ZOOM}
+      minZoom={4}
+      maxBounds={ARGENTINA_BOUNDS}
+      maxBoundsViscosity={1.0}
+      scrollWheelZoom={true}
+      className="h-[60vh] w-full"
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <LocationPickerEvents position={markerPosition} onPickLocation={onPickLocation} />
+      {hasPosition && (
+        <Marker
+          position={markerPosition}
+          draggable
+          icon={createColoredIcon('#0ea5e9', 'planta')}
+          eventHandlers={{
+            dragend: (event) => {
+              const latlng = event.target.getLatLng();
+              onPickLocation(latlng.lat, latlng.lng);
+            },
+          }}
+        />
+      )}
+    </MapContainer>
+  );
 }
 
 // Componente para ajustar la vista del mapa a los markers
@@ -222,12 +282,17 @@ function ObrasMapPanel({ obrasEnMapa, defaultCenter, loading, onExpand, showExpa
 }
 
 export default function MapPage() {
+  const { permisos } = useAuth();
+  const { toast } = useToast();
   const [obras, setObras] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterEstado, setFilterEstado] = useState('all');
   const [filterTipo, setFilterTipo] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
+  const [draftCoordinates, setDraftCoordinates] = useState(null);
 
   useEffect(() => {
     loadObras();
@@ -267,7 +332,42 @@ export default function MapPage() {
   }, [obras]);
 
   // Centro default: Argentina
-  const defaultCenter = ARGENTINA_CENTER;
+  const defaultCenter = SANTIAGO_DEL_ESTERO_CENTER;
+
+  const handleOpenNewObra = () => {
+    setDraftCoordinates(null);
+    setLocationPickerOpen(true);
+  };
+
+  const handlePickLocation = (lat, lng) => {
+    setDraftCoordinates({ lat, lng });
+  };
+
+  const handleConfirmLocation = () => {
+    if (!draftCoordinates) return;
+    setLocationPickerOpen(false);
+    setCreateDialogOpen(true);
+  };
+
+  const handleSaveObra = async (obraData) => {
+    try {
+      await obrasAPI.create(obraData);
+      await loadObras();
+      setCreateDialogOpen(false);
+      setDraftCoordinates(null);
+      toast({
+        title: '¡Obra creada!',
+        description: 'La nueva obra se agregó correctamente.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error al crear la obra',
+        description: error.message,
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -287,18 +387,29 @@ export default function MapPage() {
               {obrasSinCoords > 0 && <span className="text-amber-600 ml-2">• {obrasSinCoords} sin coordenadas</span>}
             </p>
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-              showFilters ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <Filter className="w-4 h-4" />
-            Filtros
-            {(filterEstado !== 'all' || filterTipo !== 'all') && (
-              <span className="w-2 h-2 rounded-full bg-blue-600" />
+          <div className="flex flex-wrap items-center gap-2">
+            {permisos?.crearObra && (
+              <Button
+                onClick={handleOpenNewObra}
+                className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Nueva obra
+              </Button>
             )}
-          </button>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                showFilters ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              Filtros
+              {(filterEstado !== 'all' || filterTipo !== 'all') && (
+                <span className="w-2 h-2 rounded-full bg-blue-600" />
+              )}
+            </button>
+          </div>
         </motion.div>
 
         {/* Filtros */}
@@ -390,6 +501,55 @@ export default function MapPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={locationPickerOpen} onOpenChange={setLocationPickerOpen}>
+        <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] overflow-hidden p-0 sm:rounded-2xl">
+          <div className="flex h-full min-h-0 flex-col">
+            <DialogHeader className="px-6 pt-6 pb-4 pr-14 border-b border-gray-200 text-left">
+              <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-gray-900">
+                <Plus className="h-5 w-5 text-blue-600" />
+                Nueva obra
+              </DialogTitle>
+              <p className="text-sm text-gray-500">
+                Primero marcá la ubicación en el mapa. Después se abrirá el formulario con el pin ya colocado.
+              </p>
+            </DialogHeader>
+            <div className="flex min-h-0 flex-1 flex-col gap-4 p-4">
+              <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                <LocationSelectionMap position={draftCoordinates ? [draftCoordinates.lat, draftCoordinates.lng] : [null, null]} onPickLocation={handlePickLocation} />
+                <div className="pointer-events-none absolute left-4 top-4 z-[1000] rounded-lg bg-white/95 px-3 py-2 text-sm text-gray-700 shadow-lg backdrop-blur">
+                  Hacé clic en el mapa para fijar la ubicación.
+                  {draftCoordinates && (
+                    <div className="mt-1 text-xs text-gray-500">
+                      {draftCoordinates.lat.toFixed(5)}, {draftCoordinates.lng.toFixed(5)}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 border-t border-gray-200 pt-4">
+                <Button variant="outline" onClick={() => setLocationPickerOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleConfirmLocation}
+                  disabled={!draftCoordinates}
+                  className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700"
+                >
+                  Continuar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <PlantDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        plant={null}
+        initialCoordinates={draftCoordinates}
+        onSave={handleSaveObra}
+      />
     </DashboardLayout>
   );
 }
