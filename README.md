@@ -266,3 +266,4 @@ Despues de ejecutar `npm run db:seed`, estos usuarios estaran disponibles:
 ## Licencia
 
 Proyecto academico desarrollado para el ITSE (Instituto Tecnologico de Santiago del Estero).
+Derechos Reservados 2026
