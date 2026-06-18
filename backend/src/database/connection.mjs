@@ -22,6 +22,7 @@ export const pool = mysql.createPool({
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
 });
 
+
 /**
  * Helper: ejecuta una query y devuelve rows directamente.
  * MySQL2 devuelve [rows, fields] — aquí solo devolvemos rows.
