@@ -19,6 +19,7 @@ export const pool = mysql.createPool({
   connectionLimit: 20,
   queueLimit: 0,
   charset: 'utf8mb4',
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
 });
 
 /**
