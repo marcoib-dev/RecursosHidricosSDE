@@ -20,3 +20,5 @@ Thumbs.db
 .env
 .env.*
 "@ | Out-File -Encoding utf8 .gitignore
+node_modules/
+
