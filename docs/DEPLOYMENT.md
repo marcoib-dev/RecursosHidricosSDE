@@ -186,17 +186,17 @@ Completar `.env.produccion`:
 
 | Variable | Obligatoria | Descripción |
 |---|---|---|
-| `MYSQL_ROOT_PASSWORD` | Sí | Contraseña del root de MySQL. Solo para administración interna. |
+| `MYSQL_ROOT_PASSWORD` | Sí | Contraseña del root de MySQL. Solo para administración interna. En producción no puede contener `CAMBIAR`. |
 | `DB_NAME` | Sí | Nombre de la base (`recursos_hidricos_sde`). |
 | `DB_USER` | Sí | Usuario de la aplicación. La imagen de MySQL lo crea la primera vez. No puede ser `root`. |
-| `DB_PASSWORD` | Sí | Contraseña del usuario de la aplicación. |
+| `DB_PASSWORD` | Sí | Contraseña del usuario de la aplicación. En producción no puede contener `CAMBIAR`. |
 | `DB_HOST` / `DB_PORT` | Sí | `db` / `3306` dentro de Compose. |
-| `JWT_SECRET` | Sí | Clave de firma de tokens. Debe tener **≥32 caracteres**, no puede ser el valor por defecto antiguo y es obligatoria en producción (ver abajo). |
+| `JWT_SECRET` | Sí | Clave de firma de tokens. Debe tener **≥32 caracteres**, no puede ser el valor por defecto antiguo ni contener `CAMBIAR`, y es obligatoria en producción (ver abajo). |
 | `JWT_EXPIRES_IN` | No | Duración del token (`7d` por defecto). |
 | `FRONTEND_URL` | Sí | URL pública, usada por CORS (ej. `https://recursos-hidricos.midominio.gob.ar`). |
 | `TRUST_PROXY` | No | Número de proxies delante del backend (`1` por defecto). Acepta `false` y `0`. Subir a `2` si hay otro proxy delante de nginx. |
-| `ADMIN_EMAIL` | No* | Correo del primer administrador. Necesario si la base no tiene ningún administrador. |
-| `ADMIN_PASSWORD` | No* | Contraseña del primer administrador. **Mínimo 12 caracteres**. |
+| `ADMIN_EMAIL` | No* | Correo del primer administrador. Necesario si la base no tiene ningún administrador. No puede terminar en `.invalid`. |
+| `ADMIN_PASSWORD` | No* | Contraseña del primer administrador. **Mínimo 12 caracteres** y sin `CAMBIAR`. |
 | `ADMIN_NOMBRE` | No | Nombre del primer administrador (`Administrador` por defecto). |
 | `HTTP_PORT` | No | Puerto publicado en el host (`80` por defecto). |
 | `SEED_DEMO` | No | `true` carga usuarios/obras de ejemplo; `false` deja solo el esquema. Los usuarios demo tienen contraseñas públicas. |
@@ -204,6 +204,14 @@ Completar `.env.produccion`:
 \* `ADMIN_EMAIL` y `ADMIN_PASSWORD` son opcionales solo si ya existe un
 administrador o si se usa `SEED_DEMO=true`. En una instalación real se
 recomienda `SEED_DEMO=false` + `ADMIN_*`.
+
+> **Placeholders públicos:** `.env.produccion.example` es público y sus valores
+> contienen `CAMBIAR` o terminan en `.invalid`. En producción, el entrypoint
+> aborta si `DB_PASSWORD` o `MYSQL_ROOT_PASSWORD` contienen `CAMBIAR` (sin
+> distinguir mayúsculas), y `server.js` aborta si `JWT_SECRET` también lo
+> contiene. `create-admin.mjs` no crea el administrador si `ADMIN_PASSWORD`
+> contiene `CAMBIAR` o si `ADMIN_EMAIL` termina en `.invalid`; solo muestra una
+> advertencia, sin imprimir la contraseña.
 
 Generar el secreto JWT:
 
@@ -241,8 +249,11 @@ El arranque del backend ejecuta `backend/src/database/create-admin.mjs`
 - Si no existe y `ADMIN_EMAIL` + `ADMIN_PASSWORD` están definidos, crea el
   usuario con la contraseña hasheada con bcrypt.
 - Exige una contraseña de al menos 12 caracteres.
-- Si falta alguna variable, el correo es inválido o la contraseña es corta,
-  muestra una advertencia clara (sin imprimir la contraseña) y no crea nada.
+- Rechaza `ADMIN_PASSWORD` si contiene `CAMBIAR` y `ADMIN_EMAIL` si termina en
+  `.invalid`, para no crear un administrador con los valores públicos de ejemplo.
+- Si falta alguna variable, el correo es inválido, la contraseña es corta o
+  conserva un valor de ejemplo, muestra una advertencia clara (sin imprimir la
+  contraseña) y no crea nada.
 - Nunca sobrescribe un usuario existente ni resetea contraseñas, aunque el
   correo coincida con `ADMIN_EMAIL`.
 
@@ -382,9 +393,9 @@ docker compose --env-file .env.produccion -f docker-compose.prod.yaml exec -T db
 
 ### 11. Seguridad
 
-- [ ] Contraseñas de MySQL y `JWT_SECRET` nuevas y únicas por instalación. `JWT_SECRET` debe tener ≥32 caracteres.
+- [ ] Contraseñas de MySQL y `JWT_SECRET` nuevas y únicas por instalación. `JWT_SECRET` debe tener ≥32 caracteres. Ninguna puede contener `CAMBIAR`.
 - [ ] `SEED_DEMO=false` en producción real.
-- [ ] Definir `ADMIN_EMAIL` / `ADMIN_PASSWORD` (≥12 caracteres) para el primer administrador. Verificar que no quede ningún usuario con contraseña demo.
+- [ ] Definir `ADMIN_EMAIL` / `ADMIN_PASSWORD` (≥12 caracteres, sin `CAMBIAR`, correo sin `.invalid`) para el primer administrador. Verificar que no quede ningún usuario con contraseña demo.
 - [ ] Revisar `TRUST_PROXY` si hay más de un proxy delante del backend.
 - [ ] Cambiar contraseñas de usuarios de prueba tras el primer ingreso.
 - [ ] Publicar solo `HTTP_PORT`; no exponer 3306 ni 4000.

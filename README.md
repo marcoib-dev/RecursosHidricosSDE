@@ -119,7 +119,7 @@ TRUST_PROXY=1
 
 # Primer administrador (independiente de SEED_DEMO)
 # La contraseña debe tener al menos 12 caracteres.
-ADMIN_EMAIL=admin@ejemplo.invalid
+ADMIN_EMAIL=admin@tu-dominio.gob.ar
 ADMIN_PASSWORD=una_password_de_al_menos_12_caracteres
 ADMIN_NOMBRE=Administrador General
 ```
@@ -128,6 +128,12 @@ ADMIN_NOMBRE=Administrador General
 > administrador**. Nunca se sobrescriben usuarios existentes ni se resetean
 > contraseñas. Si falta alguna variable o la contraseña es corta, el backend
 > avisa en los logs y no crea nada.
+
+> **Placeholders públicos:** en producción el backend no arranca si
+> `JWT_SECRET`, `DB_PASSWORD` o `MYSQL_ROOT_PASSWORD` todavía contienen
+> `CAMBIAR` (sin distinguir mayúsculas). Tampoco crea el administrador inicial
+> si `ADMIN_PASSWORD` contiene `CAMBIAR` o si `ADMIN_EMAIL` termina en
+> `.invalid`; en ese caso deja una advertencia clara en los logs.
 
 > El registro público (`/register`) crea siempre usuarios con rol **Inspector**
 > e ignora cualquier rol enviado en la petición. Solo un administrador
@@ -188,13 +194,17 @@ cp .env.produccion.example .env.produccion
 
 Editar `.env.produccion` y completar como mínimo:
 
-- `MYSQL_ROOT_PASSWORD` y `DB_PASSWORD`: contraseñas nuevas y distintas.
+- `MYSQL_ROOT_PASSWORD` y `DB_PASSWORD`: contraseñas nuevas y distintas. No
+  pueden conservar el placeholder `CAMBIAR`; en producción el entrypoint
+  aborta con un mensaje claro si lo hacen.
 - `JWT_SECRET`: generar uno con
   `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
-  o `openssl rand -hex 64`.
+  o `openssl rand -hex 64`. Debe tener al menos 32 caracteres y no puede
+  contener `CAMBIAR`.
 - `FRONTEND_URL`: dominio o URL pública (por ejemplo `https://recursos-hidricos.midominio.gob.ar`).
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD` y `ADMIN_NOMBRE`: primer administrador. La
-  contraseña debe tener **al menos 12 caracteres**. Son independientes de
+  contraseña debe tener **al menos 12 caracteres** y no contener `CAMBIAR`.
+  `ADMIN_EMAIL` no debe terminar en `.invalid`. Son independientes de
   `SEED_DEMO` y nunca modifican usuarios existentes.
 - `TRUST_PROXY`: `1` por defecto (nginx del frontend). Subirlo a `2` si se
   agrega otro proxy delante de nginx (por ejemplo, el del servidor del ITSE).
@@ -216,8 +226,9 @@ Solo se publica el puerto del frontend. MySQL y el backend quedan en la red inte
 
 Con `SEED_DEMO=false` la base queda vacía, pero el backend crea el primer
 administrador al arrancar si están definidos `ADMIN_EMAIL` y `ADMIN_PASSWORD`
-(contraseña de 12 caracteres o más). Es idempotente: si ya existe cualquier
-usuario con rol `administrador`, no crea ni modifica nada.
+(contraseña de 12 caracteres o más, sin `CAMBIAR`, y correo que no termine en
+`.invalid`). Es idempotente: si ya existe cualquier usuario con rol
+`administrador`, no crea ni modifica nada.
 
 Revisar los logs del backend:
 

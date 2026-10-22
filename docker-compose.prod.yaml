@@ -34,6 +34,8 @@ services:
       DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${DB_USER:?Definí DB_USER en .env.produccion}
       DB_PASSWORD: ${DB_PASSWORD:?Definí DB_PASSWORD en .env.produccion}
+      # Solo lo usa el entrypoint para rechazar placeholders públicos en producción.
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Definí MYSQL_ROOT_PASSWORD en .env.produccion}
       DB_NAME: ${DB_NAME:?Definí DB_NAME en .env.produccion}
       JWT_SECRET: ${JWT_SECRET:?Definí JWT_SECRET en .env.produccion}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}

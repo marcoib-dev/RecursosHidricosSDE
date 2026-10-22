@@ -14,6 +14,7 @@ function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
   const isProduction = process.env.NODE_ENV === 'production';
   const isLegacy = secret === LEGACY_JWT_SECRET;
+  const isPlaceholder = Boolean(secret) && secret.toUpperCase().includes('CAMBIAR');
   const isTooShort = Boolean(secret) && secret.length < MIN_JWT_SECRET_LENGTH;
 
   if (isProduction) {
@@ -27,6 +28,12 @@ function getJwtSecret() {
       fail(
         'JWT_SECRET usa el valor por defecto antiguo. Genere una clave nueva y única antes de ' +
           'arrancar en producción.'
+      );
+    }
+    if (isPlaceholder) {
+      fail(
+        'JWT_SECRET conserva el valor de ejemplo de .env.produccion.example (contiene "CAMBIAR"). ' +
+          'Genere una clave nueva y única antes de arrancar en producción.'
       );
     }
     if (isTooShort) {
@@ -46,10 +53,10 @@ function getJwtSecret() {
     return LEGACY_JWT_SECRET;
   }
 
-  if (isLegacy || isTooShort) {
+  if (isLegacy || isPlaceholder || isTooShort) {
     console.warn(
-      '⚠️  JWT_SECRET es débil (valor por defecto o menos de ' +
-        `${MIN_JWT_SECRET_LENGTH} caracteres). En producción el backend no arrancará así.`
+      '⚠️  JWT_SECRET es débil o conserva el valor de ejemplo. En producción el backend no ' +
+        `arrancará así (se requieren al menos ${MIN_JWT_SECRET_LENGTH} caracteres y un valor propio).`
     );
   }
 

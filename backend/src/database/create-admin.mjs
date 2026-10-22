@@ -33,6 +33,22 @@ async function ensureInitialAdmin() {
     return;
   }
 
+  if (password.toUpperCase().includes('CAMBIAR')) {
+    console.warn(
+      '⚠️  ADMIN_PASSWORD conserva el valor de ejemplo (contiene "CAMBIAR"). ' +
+        'No se creó el administrador inicial.'
+    );
+    return;
+  }
+
+  if (email.toLowerCase().endsWith('.invalid')) {
+    console.warn(
+      '⚠️  ADMIN_EMAIL termina en ".invalid" y parece un valor de ejemplo. ' +
+        'No se creó el administrador inicial.'
+    );
+    return;
+  }
+
   if (password.length < MIN_PASSWORD_LENGTH) {
     console.warn(
       `⚠️  ADMIN_PASSWORD tiene ${password.length} caracteres; se requieren al menos ` +
