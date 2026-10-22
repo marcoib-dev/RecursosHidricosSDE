@@ -147,7 +147,7 @@ const PlantCard = ({ plant, onEdit, onDelete, onClick }) => {
       </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -155,9 +155,12 @@ const PlantCard = ({ plant, onEdit, onDelete, onClick }) => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => onDelete(plant.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(plant.id);
+              }}
               className="bg-red-600 hover:bg-red-700"
             >
               Sí, eliminar

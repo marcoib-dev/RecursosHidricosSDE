@@ -146,24 +146,21 @@ const LoginPage = () => {
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                ¿Tienes problemas para iniciar sesion? {" "}
-                <Link
-                  to="/NotFoundPage"
-                  className="text-cyan-600 hover:text-cyan-700 font-semibold"
-                >
-                  <br />Contacta con un administrador para obtener ayuda
-                </Link>
+              <p className="text-sm text-gray-600">
+                ¿Tenés problemas para iniciar sesión? Contactá con un administrador para obtener ayuda.
               </p>
             </div>
 
             <div className="mt-4 text-center">
-              <Link
-                to="/"
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                ← Volver al inicio
-              </Link>
+              <p className="text-sm text-gray-600">
+                ¿No tenés cuenta?{" "}
+                <Link
+                  to="/register"
+                  className="font-semibold text-cyan-600 hover:text-cyan-700"
+                >
+                  Registrate
+                </Link>
+              </p>
             </div>
           </div>
         </motion.div>

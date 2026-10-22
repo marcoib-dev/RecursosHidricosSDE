@@ -32,7 +32,7 @@ const PlantsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user, permisos } = useAuth();
-  const { obras, loading, addObra, updateObra, deleteObra } = useObras();
+  const { obras, loading, addObra, updateObra, deleteObra, getObra } = useObras();
   const [filteredObras, setFilteredObras] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState(searchParams.get('estado') || "all");
@@ -139,8 +139,11 @@ const PlantsPage = () => {
     }
   };
 
-  const handleEditObra = (obra) => {
-    setEditingObra(obra);
+  const handleEditObra = async (obra) => {
+    // El listado no incluye los datos técnicos; se pide el detalle para
+    // que el formulario de edición los precargue.
+    const obraCompleta = await getObra(obra.id);
+    setEditingObra(obraCompleta || obra);
     setIsDialogOpen(true);
   };
 
@@ -165,7 +168,7 @@ const PlantsPage = () => {
                 Gestiona todas las instalaciones
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto">
               <Button
                 variant="outline"
                 onClick={() => {

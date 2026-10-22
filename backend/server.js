@@ -123,7 +123,9 @@ const upload = multer({
     if (ALLOWED_MIMES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Tipo de archivo no permitido'));
+      const error = new Error('Tipo de archivo no permitido');
+      error.status = 400;
+      cb(error);
     }
   },
 });
@@ -832,6 +834,23 @@ app.put('/api/obras/:id', authenticateToken, loadUser, async (req, res) => {
   }
   const existingObra = existingRows[0];
 
+  // Datos técnicos actuales: se usan como respaldo cuando el formulario
+  // envía un campo vacío, para no borrar información existente.
+  let existingTechnical = null;
+  if (existingObra.tipo === 'pozo') {
+    const [rows] = await pool.query(
+      'SELECT profundidad, caudal, tipo_bomba, contaminantes FROM pozos WHERE id = ?',
+      [req.params.id]
+    );
+    existingTechnical = rows[0] || null;
+  } else if (existingObra.tipo === 'planta') {
+    const [rows] = await pool.query(
+      'SELECT tratamiento, capacidad, fuente FROM plantas WHERE id = ?',
+      [req.params.id]
+    );
+    existingTechnical = rows[0] || null;
+  }
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -857,19 +876,37 @@ app.put('/api/obras/:id', authenticateToken, loadUser, async (req, res) => {
       return res.status(404).json({ error: 'Obra no encontrada' });
     }
 
-    // Obtener tipo
-    const [obras] = await pool.query('SELECT tipo FROM obras WHERE id = ?', [req.params.id]);
-    const tipo = obras[0]?.tipo;
+    const tipo = existingObra.tipo;
+
+    // Un campo técnico vacío o ausente conserva el valor guardado. El
+    // formulario no envía una señal explícita de "borrar", así que se
+    // prioriza no perder datos existentes.
+    const keepTechnicalValue = (value, current) => (
+      value === undefined || value === null || String(value).trim() === ''
+        ? current ?? null
+        : value
+    );
 
     if (tipo === 'pozo') {
       await conn.query(
         'UPDATE pozos SET profundidad = ?, caudal = ?, tipo_bomba = ?, contaminantes = ? WHERE id = ?',
-        [profundidad || null, caudal || null, tipo_bomba || null, contaminantes || null, req.params.id]
+        [
+          keepTechnicalValue(profundidad, existingTechnical?.profundidad),
+          keepTechnicalValue(caudal, existingTechnical?.caudal),
+          keepTechnicalValue(tipo_bomba, existingTechnical?.tipo_bomba),
+          keepTechnicalValue(contaminantes, existingTechnical?.contaminantes),
+          req.params.id,
+        ]
       );
     } else if (tipo === 'planta') {
       await conn.query(
         'UPDATE plantas SET tratamiento = ?, capacidad = ?, fuente = ? WHERE id = ?',
-        [tratamiento || null, capacidad || null, fuente || null, req.params.id]
+        [
+          keepTechnicalValue(tratamiento, existingTechnical?.tratamiento),
+          keepTechnicalValue(capacidad, existingTechnical?.capacidad),
+          keepTechnicalValue(fuente, existingTechnical?.fuente),
+          req.params.id,
+        ]
       );
     }
 

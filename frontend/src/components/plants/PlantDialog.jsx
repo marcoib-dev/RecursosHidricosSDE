@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -240,23 +240,26 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave, initialCoordinates = n
 
   useEffect(() => {
     if (plant) {
+      const datosPozo = plant.datos_pozo ?? plant.pozo ?? {};
+      const datosPlanta = plant.datos_planta ?? plant.planta ?? {};
+
       setFormData({
         ...defaultForm,
         ...plant,
         latitud: plant.latitud ?? defaultForm.latitud,
         longitud: plant.longitud ?? defaultForm.longitud,
-        // Datos específicos que vienen del sub-objeto
-        profundidad: plant.pozo?.profundidad || plant.profundidad || '',
-        caudal: plant.pozo?.caudal || plant.caudal || '',
-        tipo_bomba: plant.pozo?.tipo_bomba || plant.tipo_bomba || '',
-        contaminantes: plant.pozo?.contaminantes || plant.contaminantes || '',
-        altura_tanque: plant.pozo?.altura_tanque || plant.altura_tanque || '',
-        capacidad_tanque: plant.pozo?.capacidad_tanque || plant.capacidad_tanque || '',
-        diametro_pozo: plant.pozo?.diametro_pozo || plant.diametro_pozo || '',
-        tratamiento: plant.planta?.tratamiento || plant.tratamiento || '',
-        capacidad: plant.planta?.capacidad || plant.capacidad || '',
-        fuente: plant.planta?.fuente || plant.fuente || '',
-        volumen_represa: plant.planta?.volumen_represa || plant.volumen_represa || '',
+        // Datos específicos que vienen del sub-objeto datos_pozo/datos_planta
+        profundidad: datosPozo.profundidad ?? plant.profundidad ?? '',
+        caudal: datosPozo.caudal ?? plant.caudal ?? '',
+        tipo_bomba: datosPozo.tipo_bomba ?? plant.tipo_bomba ?? '',
+        contaminantes: datosPozo.contaminantes ?? plant.contaminantes ?? '',
+        altura_tanque: datosPozo.altura_tanque ?? plant.altura_tanque ?? '',
+        capacidad_tanque: datosPozo.capacidad_tanque ?? plant.capacidad_tanque ?? '',
+        diametro_pozo: datosPozo.diametro_pozo ?? plant.diametro_pozo ?? '',
+        tratamiento: datosPlanta.tratamiento ?? plant.tratamiento ?? '',
+        capacidad: datosPlanta.capacidad ?? plant.capacidad ?? '',
+        fuente: datosPlanta.fuente ?? plant.fuente ?? '',
+        volumen_represa: datosPlanta.volumen_represa ?? plant.volumen_represa ?? '',
       });
     } else {
       setFormData({
@@ -462,6 +465,9 @@ const PlantDialog = ({ open, onOpenChange, plant, onSave, initialCoordinates = n
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{plant ? 'Editar Obra' : 'Nueva Obra Hídrica'}</DialogTitle>
+          <DialogDescription className="sr-only">
+            Completá los datos generales y técnicos de la obra hídrica.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
