@@ -1,5 +1,8 @@
 // Servicio centralizado para comunicarse con el backend
-const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'http://localhost:4000/api';
+// Sin VITE_API_URL usa ruta relativa: nginx (producción) o el proxy de Vite
+// (desarrollo) se encargan de reenviar /api al backend. Así el mismo build
+// funciona detrás de cualquier dominio, subdominio o puerto.
+const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
 
 // Helper para hacer requests con token JWT
 async function request(endpoint, options = {}) {

@@ -163,13 +163,24 @@ async function seed() {
     ];
 
     for (const obra of obras) {
-      await pool.query(
+      // Idempotencia: si la obra demo ya existe, no se vuelve a insertar.
+      // Así SEED_DEMO=true puede ejecutarse en cada arranque sin duplicar.
+      const [existing] = await pool.query(
+        'SELECT id FROM obras WHERE nombre = ? LIMIT 1',
+        [obra.nombre]
+      );
+
+      if (existing.length > 0) {
+        console.log(`  ⏭️  ${obra.nombre} ya existe, se omite`);
+        continue;
+      }
+
+      const [insertResult] = await pool.query(
         `INSERT INTO obras (tipo, nombre, ubicacion, empresa, responsable, estado, anio, latitud, longitud, descripcion, porcentaje_avance, localidad, created_by)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [obra.tipo, obra.nombre, obra.ubicacion, obra.empresa, obra.responsable, obra.estado, obra.anio, obra.lat, obra.lng, obra.desc, obra.avance, obra.localidad, userId]
       );
-      const [inserted] = await pool.query('SELECT LAST_INSERT_ID() AS id');
-      const obraId = inserted[0].id;
+      const obraId = insertResult.insertId;
 
       // Insertar datos específicos según tipo
       if (obra.tipo === 'pozo') {

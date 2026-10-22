@@ -6,9 +6,14 @@
 
 | Software | Version Minima | Proposito |
 |---|---|---|
-| Node.js | 18.x | Runtime para backend y build de frontend |
-| npm | 9.x | Gestor de paquetes |
-| MySQL | 8.0 | Base de datos |
+| Node.js | 18.x | Runtime para backend y build de frontend (solo despliegue manual) |
+| npm | 9.x | Gestor de paquetes (solo despliegue manual) |
+| MySQL | 8.0 | Base de datos (solo despliegue manual) |
+| Docker Engine | 24.x | **Recomendado:** contenedores de backend, frontend y base |
+| Docker Compose | v2 | Orquestación del despliegue con Docker |
+
+> Para el despliegue con Docker no hace falta instalar Node, npm, MySQL ni nginx en el servidor. Ver [Despliegue con Docker](#despliegue-con-docker-recomendado).
+
 
 ### Recursos Minimos Recomendados
 
@@ -127,87 +132,219 @@ Para Windows (CMD):
 SETUP_BD.bat
 ```
 
-## Despliegue Automatizado con Docker (Recomendado)
+## Despliegue con Docker (Recomendado)
 
-Para garantizar un despliegue aislado, rápido y evitar conflictos de arquitectura de procesador (como las restricciones de instrucciones `x86-64-v2` de MySQL 8 en hardware antiguo), el sistema está completamente dockerizado utilizando **MariaDB** como motor de base de datos drop-in replacement.
+El repositorio incluye todo lo necesario para desplegar sin instalar Node, MySQL ni nginx en el servidor:
 
-### Estructura de Producción con Docker Compose
+| Archivo | Función |
+|---|---|
+| `docker-compose.prod.yaml` | Orquesta `db` (MySQL 8), `backend` (Node/Express) y `frontend` (nginx). |
+| `backend/Dockerfile` | Build multi-stage sobre `node:20-alpine`; instala dependencias con `npm ci --omit=dev`, compila `bcrypt` en la etapa de build y ejecuta como usuario `node`. |
+| `backend/docker-entrypoint.sh` | Espera/inicializa el esquema y, si `SEED_DEMO=true`, carga los datos de ejemplo. |
+| `frontend/Dockerfile` | Build multi-stage: Vite genera `dist/` y nginx lo sirve. |
+| `frontend/nginx.conf` | Fallback de SPA, proxy de `/api` y `/uploads`, límite de subida y cache de assets. |
+| `.env.produccion.example` | Plantilla de variables; se copia a `.env.produccion` (ignorado por git). |
 
-Crear un archivo `docker-compose.yml` en la raíz del servidor o levantar un nuevo Stack en Portainer con la siguiente configuración:
+### Requisitos
 
-```yaml
-version: '3.8'
+- Docker Engine 24 o superior.
+- Docker Compose v2 (`docker compose`).
+- `HTTP_PORT` libre (80 por defecto; 8080 si el 80 está ocupado).
+- 2 GB de RAM recomendados (MySQL + Node + nginx).
 
-services:
-  db-rh:
-    image: mariadb:10.11
-    container_name: rh_mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: tu_password_segura
-      MYSQL_DATABASE: recursos_hidricos_sde
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
+### Arquitectura del despliegue
 
-  backend-rh:
-    image: node:18-slim
-    container_name: rh_backend
-    restart: always
-    working_dir: /app
-    volumes:
-      - ./backend:/app
-    ports:
-      - "4000:4000"
-    networks:
-      - default
-    environment:
-      - DB_HOST=rh_mysql
-      - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASSWORD=tu_password_segura
-    command: sh -c "sleep 15 && npm install && DB_HOST=rh_mysql DB_PORT=3306 DB_USER=root DB_PASSWORD=tu_password_segura node src/database/init.mjs"
-    depends_on:
-      - db-rh
-
-  frontend-rh:
-    image: node:18-slim
-    container_name: rh_frontend
-    restart: always
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
-    ports:
-      - "3000:3000"
-    environment:
-      - VITE_API_URL=http://<IP_O_DOMINIO_DEL_SERVIDOR>:4000
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
-    depends_on:
-      - backend-rh
-
-volumes:
-    mysql_data:
-
-
-### Configuración del Entorno en el Frontend
-
-Es **crítico** configurar las variables de entorno del frontend para que las peticiones del cliente apunten correctamente al servidor de backend y no a `localhost`:
-
-1. Crear un archivo `frontend/.env` en el entorno de despliegue.
-2. Definir la variable `VITE_API_URL` apuntando a la IP pública, privada de la organización o dominio asignado al servidor:
-
-```env
-VITE_API_URL=http://<IP_O_DOMINIO_DEL_SERVIDOR>:4000
+```
+Navegador
+   │  HTTP :HTTP_PORT
+   ▼
+frontend (nginx)
+   ├── /            → dist/ de React (SPA, fallback a index.html)
+   ├── /api/...     → proxy → backend:4000
+   └── /uploads/... → proxy → backend:4000
+                                  │
+                                  ▼
+                              db:3306 (MySQL 8)
 ```
 
-### Comandos de Mantenimiento dentro del Contenedor (Seeds)
+- Solo el servicio `frontend` publica un puerto en el host.
+- `backend` y `db` solo son accesibles dentro de la red de Compose.
+- El frontend usa rutas relativas (`/api`), así que no hay que recompilar si cambia el dominio, el subdominio o el puerto.
+- El backend confía en un único proxy (`trust proxy = 1`), por lo que `req.ip` y el rate limit funcionan con la IP real del cliente detrás de nginx.
 
-Si se requiere volver a popular la base de datos con los usuarios de prueba iniciales dentro del entorno Docker, ejecutar desde la consola del contenedor de backend (`rh_backend`):
+### 1. Clonar y crear el archivo de entorno
 
 ```bash
-DB_HOST=rh_mysql DB_PORT=3306 DB_USER=root DB_PASSWORD=tu_password_segura npm run db:seed
+git clone https://github.com/marcoib-dev/RecursosHidricosSDE.git
+cd RecursosHidricosSDE
+
+cp .env.produccion.example .env.produccion
+chmod 600 .env.produccion
 ```
+
+Completar `.env.produccion`:
+
+| Variable | Obligatoria | Descripción |
+|---|---|---|
+| `MYSQL_ROOT_PASSWORD` | Sí | Contraseña del root de MySQL. Solo para administración interna. |
+| `DB_NAME` | Sí | Nombre de la base (`recursos_hidricos_sde`). |
+| `DB_USER` | Sí | Usuario de la aplicación. La imagen de MySQL lo crea la primera vez. No puede ser `root`. |
+| `DB_PASSWORD` | Sí | Contraseña del usuario de la aplicación. |
+| `DB_HOST` / `DB_PORT` | Sí | `db` / `3306` dentro de Compose. |
+| `JWT_SECRET` | Sí | Clave de firma de tokens. Generar una nueva (ver abajo). |
+| `JWT_EXPIRES_IN` | No | Duración del token (`7d` por defecto). |
+| `FRONTEND_URL` | Sí | URL pública, usada por CORS (ej. `https://recursos-hidricos.midominio.gob.ar`). |
+| `HTTP_PORT` | No | Puerto publicado en el host (`80` por defecto). |
+| `SEED_DEMO` | No | `true` carga usuarios/obras de ejemplo; `false` deja solo el esquema. |
+
+Generar el secreto JWT:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+# alternativa sin Node:
+openssl rand -hex 64
+```
+
+> **Nunca** commitear `.env.produccion`. Ya está incluido en `.gitignore`.
+> Si la contraseña contiene `$`, `#`, espacios u otros caracteres especiales, entrecomillarla en el archivo de entorno.
+
+### 2. Levantar el stack
+
+```bash
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml up -d --build
+```
+
+Verificar:
+
+```bash
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml ps
+curl http://localhost:${HTTP_PORT:-80}/api/health
+```
+
+La respuesta esperada del health check es `{"status":"ok","database":"connected",...}`.
+
+### 3. Inicialización de la base de datos
+
+**Decisión:** el esquema lo crea `backend/src/database/init.mjs` desde el entrypoint del backend, **no** se monta `backend/database.sql` en `/docker-entrypoint-initdb.d`.
+
+Motivos:
+
+1. `database.sql` contiene inserts de usuarios y obras de ejemplo. Montarlo haría que **siempre** se carguen datos demo, incluso en producción.
+2. Los hashes de contraseña de `database.sql` corresponden a valores de ejemplo que no permiten un login real; el seed de Node genera hashes válidos con `bcrypt`.
+3. `init.mjs` es idempotente (`CREATE TABLE IF NOT EXISTS`, ignora índices existentes) y se puede ejecutar en cada arranque sin duplicar nada.
+4. La imagen de MySQL ya crea la base con `MYSQL_DATABASE`; `init.mjs` se conecta directo a ella y solo intenta crearla si no existe.
+
+> Limitación: `init.mjs` crea tablas faltantes, pero no es un sistema de migraciones. Si en el futuro cambia una columna existente, habrá que agregar una migración explícita.
+
+### 4. Datos de ejemplo (opcional)
+
+Opción A — antes del primer arranque: poner `SEED_DEMO=true` en `.env.produccion` y ejecutar `up -d --build`.
+
+Opción B — con el stack ya levantado:
+
+```bash
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml exec backend npm run db:seed
+```
+
+El seed es idempotente:
+
+- Los usuarios se insertan con `INSERT IGNORE` (no se pisan contraseñas existentes).
+- Cada obra demo se busca por nombre antes de insertarla.
+- Se puede ejecutar en cada reinicio con `SEED_DEMO=true` sin duplicar registros.
+
+Credenciales de prueba: `admin@recursoshidricos.gob.ar / admin123`, `presidente@... / presidente123`, `inspector@... / inspector123`, departamentos `/ depto123`.
+
+> **Cambiar todas las contraseñas de prueba después del primer ingreso.**
+
+Para desactivar el seed en arranques posteriores, volver a `SEED_DEMO=false` y aplicar con `up -d`.
+
+### 5. Logs y estado
+
+```bash
+# Seguir todos los logs
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml logs -f
+
+# Un servicio concreto
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml logs -f backend
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml logs -f db
+
+# Estado de salud
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml ps
+docker inspect --format '{{.State.Health.Status}}' $(docker compose --env-file .env.produccion -f docker-compose.prod.yaml ps -q backend)
+```
+
+### 6. Actualizar el despliegue
+
+```bash
+git pull
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml up -d --build
+```
+
+- Se reconstruyen las imágenes con el código nuevo.
+- El entrypoint vuelve a ejecutar `init.mjs` (idempotente).
+- Los volúmenes `mysql_data` y `uploads_data` se conservan.
+- Si cambió `nginx.conf`, el contenedor de frontend se recrea con la nueva configuración.
+
+### 7. Detener o eliminar
+
+```bash
+# Detener conservando datos
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml down
+
+# Detener y ELIMINAR base de datos + archivos subidos
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml down -v
+```
+
+> ⚠️ **`down -v` borra los volúmenes `mysql_data` y `uploads_data`.** No existe recuperación sin un backup previo.
+
+### 8. Backups y restauración
+
+Backup de la base:
+
+```bash
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml exec -T db \
+  sh -c 'exec mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' \
+  > backup_$(date +%Y%m%d_%H%M%S).sql
+```
+
+Backup de los archivos subidos:
+
+```bash
+docker run --rm \
+  -v recursos-hidricos-sde_uploads_data:/data:ro \
+  -v "$PWD":/backup \
+  alpine sh -c 'tar czf /backup/uploads_$(date +%Y%m%d).tar.gz -C /data .'
+```
+
+Restaurar la base:
+
+```bash
+cat backup_20260101_020000.sql | \
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml exec -T db \
+  sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"'
+```
+
+### 9. Resolución de problemas
+
+| Síntoma | Causa probable / solución |
+|---|---|
+| `502 Bad Gateway` después de actualizar | Recrear el frontend: `docker compose ... up -d --force-recreate frontend`. nginx resuelve `backend` dinámicamente, pero un reinicio fuerza la reconexión. |
+| `Access denied for user 'rh_app'` | Se cambió `DB_PASSWORD` después de crear el volumen. MySQL solo aplica `MYSQL_USER`/`MYSQL_PASSWORD` la primera vez. Restaurar la contraseña anterior o cambiarla dentro de MySQL. |
+| El puerto 80 está ocupado | Cambiar `HTTP_PORT=8080` en `.env.produccion` y ejecutar `up -d`. |
+| No aparecen los datos demo | `SEED_DEMO=true` en `.env.produccion`, luego `up -d`; revisar `logs backend`. También se puede ejecutar el seed manualmente. |
+| Los archivos subidos no persisten | Verificar que exista el volumen `recursos-hidricos-sde_uploads_data` y que no se haya usado `down -v`. |
+| Error de permisos en `uploads/` con bind mount | El contenedor corre como usuario `node` (UID 1000): `sudo chown -R 1000:1000 ./uploads`. Con volúmenes nombrados no hace falta. |
+| Cambios en `.env.produccion` no se aplican | Ejecutar `up -d` (Compose recrea si cambian las variables). |
+
+### 10. Seguridad
+
+- [ ] Contraseñas de MySQL y `JWT_SECRET` nuevas y únicas por instalación.
+- [ ] `SEED_DEMO=false` en producción real.
+- [ ] Cambiar contraseñas de usuarios de prueba tras el primer ingreso.
+- [ ] Publicar solo `HTTP_PORT`; no exponer 3306 ni 4000.
+- [ ] Configurar HTTPS con un reverse proxy delante (Caddy, Traefik, nginx del host) apuntando a `HTTP_PORT`.
+- [ ] Backups programados de base y uploads.
+- [ ] Mantener `.env.produccion` fuera del repositorio y con permisos `600`.
 
 ## Despliegue en Produccion
 

@@ -19,6 +19,11 @@ const app = express();
 const port = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'recursos-hidricos-sde-secret';
 
+// En producción hay exactamente un proxy delante (nginx del frontend).
+// Sin esto, req.ip sería la IP del contenedor de nginx y express-rate-limit
+// aplicaría el límite globalmente en lugar de por cliente.
+app.set('trust proxy', 1);
+
 // ─── Middlewares ──────────────────────────────────────
 app.use(helmet());
 app.use(cors({

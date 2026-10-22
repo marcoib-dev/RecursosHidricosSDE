@@ -10,6 +10,7 @@ Sistema web de gestion integral de obras hidricas (pozos y plantas potabilizador
 - [Instalacion Rapida](#instalacion-rapida)
 - [Variables de Entorno](#variables-de-entorno)
 - [Ejecucion](#ejecucion)
+- [Despliegue con Docker](#despliegue-con-docker)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Usuarios de Prueba](#usuarios-de-prueba)
 - [Documentacion Adicional](#documentacion-adicional)
@@ -148,6 +149,94 @@ npm run build
 npm run preview
 ```
 
+## Despliegue con Docker
+
+Esta es la forma recomendada para el servidor: no hace falta instalar Node, MySQL ni nginx en la máquina, solo Docker.
+
+### Requisitos
+
+- Docker Engine 24 o superior.
+- Docker Compose v2 (`docker compose`, no `docker-compose`).
+- Puertos libres: el que se publique como `HTTP_PORT` (80 por defecto).
+
+### 1. Clonar y configurar
+
+```bash
+git clone https://github.com/marcoib-dev/RecursosHidricosSDE.git
+cd RecursosHidricosSDE
+
+cp .env.produccion.example .env.produccion
+```
+
+Editar `.env.produccion` y completar como mínimo:
+
+- `MYSQL_ROOT_PASSWORD` y `DB_PASSWORD`: contraseñas nuevas y distintas.
+- `JWT_SECRET`: generar uno con
+  `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+  o `openssl rand -hex 64`.
+- `FRONTEND_URL`: dominio o URL pública (por ejemplo `https://recursos-hidricos.midominio.gob.ar`).
+- `HTTP_PORT`: `80` por defecto; usar `8080` si el servidor ya tiene algo en el 80.
+
+`.env.produccion` está en `.gitignore`: **nunca** se commitea.
+
+### 2. Levantar la aplicación
+
+```bash
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml up -d --build
+```
+
+La aplicación queda disponible en `http://IP_DEL_SERVIDOR:HTTP_PORT`.
+
+Solo se publica el puerto del frontend. MySQL y el backend quedan en la red interna de Compose; nginx sirve la SPA y reenvía `/api` y `/uploads` al backend. Como el frontend usa rutas relativas, el mismo build funciona con cualquier dominio, subdominio o puerto sin recompilar.
+
+### 3. Cargar datos de ejemplo (opcional)
+
+Para una demo o primer ingreso, poner `SEED_DEMO=true` en `.env.produccion` antes del primer arranque y ejecutar el mismo comando. El seed es idempotente: no duplica usuarios ni obras en reinicios.
+
+También se puede ejecutar manualmente:
+
+```bash
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml exec backend npm run db:seed
+```
+
+Credenciales de prueba: `admin@recursoshidricos.gob.ar / admin123` (y el resto de la tabla de [Usuarios de Prueba](#usuarios-de-prueba)).
+
+> **Importante:** después del primer ingreso, cambiar las contraseñas de todos los usuarios de prueba desde la aplicación.
+
+### 4. Ver logs
+
+```bash
+# Todos los servicios
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml logs -f
+
+# Solo backend / frontend / base de datos
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml logs -f backend
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml logs -f frontend
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml logs -f db
+
+# Estado y salud de los contenedores
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml ps
+```
+
+### 5. Actualizar tras un cambio en el repositorio
+
+```bash
+git pull
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml up -d --build
+```
+
+Docker reconstruye las imágenes, ejecuta el esquema idempotente y reinicia solo lo necesario. Los datos de MySQL y los archivos subidos se conservan en volúmenes.
+
+### 6. Detener
+
+```bash
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml down
+```
+
+> ⚠️ **`down -v` borra la base de datos y los archivos subidos.** No usar `-v` salvo que se quiera empezar de cero. Para respaldos, ver [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#backups).
+
+Para el detalle de variables, backups, restauración y resolución de problemas, ver [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#despliegue-con-docker-recomendado).
+
 ## Estructura del Proyecto
 
 ```
@@ -155,6 +244,9 @@ RecursosHidricosSDE/
 ├── backend/
 │   ├── server.js                 # Servidor Express (punto de entrada)
 │   ├── database.sql              # Script SQL completo de la BD
+│   ├── Dockerfile                # Imagen de producción (Node 20 Alpine)
+│   ├── docker-entrypoint.sh      # Init de esquema + seed opcional
+│   ├── .dockerignore
 │   ├── package.json
 │   ├── src/
 │   │   ├── database/
@@ -179,6 +271,9 @@ RecursosHidricosSDE/
 │   ├── index.html
 │   ├── vite.config.js
 │   ├── tailwind.config.js
+│   ├── Dockerfile                # Build con Vite + nginx
+│   ├── nginx.conf                # SPA, proxy /api y /uploads
+│   ├── .dockerignore
 │   ├── package.json
 │   └── src/
 │       ├── App.jsx               # Rutas principales
@@ -230,6 +325,9 @@ RecursosHidricosSDE/
 │
 ├── CONTRIBUTING.md
 ├── CHANGELOG.md
+├── docker-compose.prod.yaml      # Orquestación de producción
+├── .env.produccion.example      # Plantilla de variables para Docker
+├── .gitattributes
 ├── setup.sh                      # Script de setup automatico (Linux/Mac)
 ├── SETUP_BD.ps1                  # Script de setup (Windows PowerShell)
 ├── SETUP_BD.bat                  # Script de setup (Windows CMD)

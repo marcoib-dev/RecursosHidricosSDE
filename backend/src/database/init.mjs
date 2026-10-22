@@ -9,24 +9,40 @@ dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
 const DB_NAME = process.env.DB_NAME || 'recursos_hidricos_sde';
 
+const connectionConfig = {
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '3306'),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+};
+
+// En Docker, MySQL ya creó la base a partir de MYSQL_DATABASE y el usuario
+// de aplicación no tiene privilegio global para CREATE DATABASE. Conectamos
+// directo a la base y solo intentamos crearla si realmente no existe.
+async function connectToDatabase() {
+  try {
+    return await mysql.createConnection({ ...connectionConfig, database: DB_NAME });
+  } catch (error) {
+    if (error.code !== 'ER_BAD_DB_ERROR') throw error;
+
+    const adminConnection = await mysql.createConnection(connectionConfig);
+    try {
+      await adminConnection.query(
+        `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+      );
+    } finally {
+      await adminConnection.end();
+    }
+    return mysql.createConnection({ ...connectionConfig, database: DB_NAME });
+  }
+}
+
 async function initDatabase() {
-  // 1. Conectar sin DB para crearla si no existe
-  const connection = await mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '3306'),
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-  });
+  const connection = await connectToDatabase();
 
   try {
     console.log('✅ Conectado a MySQL');
-
-    await connection.query(
-      `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
-    );
     console.log(`✅ Base de datos "${DB_NAME}" verificada/creada`);
-
-    await connection.query(`USE \`${DB_NAME}\``);
 
     // ─── Tabla de usuarios (según diagrama ER) ───────
     // Campos: ID_usuario, nombre, apellido, correo, contraseña, rol
