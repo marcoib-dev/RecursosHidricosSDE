@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import jwtConfig from '../config/jwt.cjs';
 import { query } from '../database/connection.js';
 
 export const authenticate = async (req, res, next) => {
@@ -10,7 +11,7 @@ export const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, jwtConfig.getJwtSecret());
 
     const rows = await query(
       'SELECT id, nombre, apellido, correo, rol, activo FROM usuarios WHERE id = ?',

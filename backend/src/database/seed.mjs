@@ -10,6 +10,8 @@ dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
 async function seed() {
   try {
+    console.warn('⚠️  ATENCIÓN: el seed crea usuarios demo con contraseñas PÚBLICAS y conocidas.');
+    console.warn('⚠️  Cámbielas desde la aplicación después del primer ingreso.\n');
     console.log('🌱 Iniciando seed de datos...\n');
 
     // ─── Crear usuario administrador ─────────────────

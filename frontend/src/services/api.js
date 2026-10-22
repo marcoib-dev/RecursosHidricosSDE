@@ -4,6 +4,38 @@
 // funciona detrás de cualquier dominio, subdominio o puerto.
 const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
 
+const EXPIRED_TOKEN_ERRORS = [
+  'Token expirado, inicie sesión nuevamente',
+  'Token inválido',
+  'Token de autenticación requerido',
+  'No autenticado',
+];
+
+function handleAuthError(errorMessage) {
+  if (EXPIRED_TOKEN_ERRORS.some((msg) => errorMessage.includes(msg))) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  }
+}
+
+function filenameFromContentDisposition(header) {
+  if (!header) return null;
+
+  // RFC 5987: filename*=UTF-8''nombre%20codificado
+  const encoded = header.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded[1].trim().replace(/^"|"$/g, ''));
+    } catch (_error) {
+      // Si el encoding es inválido, se intenta con filename normal.
+    }
+  }
+
+  const plain = header.match(/filename\s*=\s*"?([^";]+)"?/i);
+  return plain ? plain[1].trim() : null;
+}
+
 // Helper para hacer requests con token JWT
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('token');
@@ -28,20 +60,7 @@ async function request(endpoint, options = {}) {
   if (response.status === 401) {
     const data = await response.json().catch(() => ({}));
     const errorMessage = data.error || 'No autorizado';
-
-    const expiredTokenErrors = [
-      'Token expirado, inicie sesión nuevamente',
-      'Token inválido',
-      'Token de autenticación requerido',
-      'No autenticado',
-    ];
-
-    if (expiredTokenErrors.some((msg) => errorMessage.includes(msg))) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
-
+    handleAuthError(errorMessage);
     throw new Error(errorMessage);
   }
 
@@ -52,6 +71,42 @@ async function request(endpoint, options = {}) {
   }
 
   return data;
+}
+
+// Helper para descargar binarios (archivos) con el mismo token JWT.
+// No usa el token en la URL para no exponerlo en logs, historial ni Referer.
+async function requestBlob(endpoint) {
+  const token = localStorage.getItem('token');
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      credentials: 'include',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+  } catch (_error) {
+    throw new Error('No se pudo conectar con el servidor');
+  }
+
+  if (!response.ok) {
+    let errorMessage = response.status === 404
+      ? 'Archivo no encontrado'
+      : 'No se pudo descargar el archivo';
+
+    try {
+      const data = await response.json();
+      if (data?.error) errorMessage = data.error;
+    } catch (_error) {
+      // La respuesta de error no era JSON; se mantiene el mensaje genérico.
+    }
+
+    if (response.status === 401) handleAuthError(errorMessage);
+    throw new Error(errorMessage);
+  }
+
+  return response;
 }
 
 // ═══ AUTH ═══
@@ -127,7 +182,27 @@ export const archivosAPI = {
     });
   },
 
-  download: (fileId) => `${API_BASE}/archivos/download/${fileId}`,
+  download: async (fileId, fallbackName = 'archivo') => {
+    const response = await requestBlob(`/archivos/download/${fileId}`);
+    const blob = await response.blob();
+    const filename =
+      filenameFromContentDisposition(response.headers.get('Content-Disposition')) ||
+      fallbackName;
+
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    // Se libera después del click para no cortar la descarga en algunos navegadores.
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+
+    return { filename, size: blob.size };
+  },
 
   delete: (fileId) =>
     request(`/archivos/${fileId}`, { method: 'DELETE' }),
@@ -143,6 +218,12 @@ export const dashboardAPI = {
 
 // ═══ USUARIOS ═══
 export const usuariosAPI = {
+  create: (userData) =>
+    request('/usuarios', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    }),
+
   list: (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return request(`/usuarios${query ? `?${query}` : ''}`);

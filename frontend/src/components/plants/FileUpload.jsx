@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import { archivosAPI } from '@/services/api';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,18 @@ const FileUpload = ({ plantId, files = [], onUpload, onDelete, canUpload = true,
       onDelete(fileId);
     }
     setFileToDelete(null);
+  };
+
+  const handleDownload = async (file) => {
+    try {
+      await archivosAPI.download(file.id, file.nombre_original || file.name);
+    } catch (error) {
+      toast({
+        title: 'No se pudo descargar el archivo',
+        description: error.message || 'Intentá nuevamente en unos segundos.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const formatFileSize = (bytes) => {
@@ -95,11 +108,7 @@ const FileUpload = ({ plantId, files = [], onUpload, onDelete, canUpload = true,
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    const token = localStorage.getItem('token');
-                    const apiBaseUrl = import.meta.env.VITE_API_URL || '';
-                    window.open(`${apiBaseUrl}/api/archivos/download/${file.id}?token=${token}`, '_blank');
-                  }}
+                  onClick={() => handleDownload(file)}
                 >
                   <Download className="w-4 h-4" />
                 </Button>

@@ -6,15 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Droplets, Mail, Lock, User, Briefcase } from "lucide-react";
+import { Droplets, Mail, Lock, User } from "lucide-react";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -26,7 +19,6 @@ const RegisterPage = () => {
     apellido: "",
     correo: "",
     contrasena: "",
-    rol: "inspector",
   });
   const [errors, setErrors] = useState({});
 
@@ -187,25 +179,10 @@ const RegisterPage = () => {
                 {errors.contrasena && <p className="text-sm text-red-500">{errors.contrasena}</p>}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="rol">Rol</Label>
-                <Select
-                  value={formData.rol}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, rol: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="inspector">Inspector</SelectItem>
-                    <SelectItem value="dpto_construccion">Dpto. Construcción</SelectItem>
-                    <SelectItem value="dpto_estudios">Dpto. Estudios</SelectItem>
-                    <SelectItem value="dpto_conservacion">Dpto. Conservación</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <p className="text-sm text-gray-500">
+                Tu cuenta se creará con rol Inspector. Un administrador puede
+                asignarte otro rol después.
+              </p>
 
               <Button
                 type="submit"

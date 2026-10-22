@@ -139,7 +139,7 @@ const UsersPage = () => {
     }
     setCreating(true);
     try {
-      await authAPI.register(newUser);
+      await usuariosAPI.create(newUser);
       toast({ title: "¡Usuario creado!", description: `${newUser.nombre} ${newUser.apellido} ha sido registrado como ${getRolLabel(newUser.rol)}` });
       setShowCreateDialog(false);
       setNewUser({ nombre: "", apellido: "", correo: "", contrasena: "", rol: "inspector" });

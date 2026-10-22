@@ -15,14 +15,34 @@ const path = require('path');
 const crypto = require('crypto');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
+const { getJwtSecret } = require('./src/config/jwt.cjs');
+
 const app = express();
 const port = process.env.PORT || 4000;
-const JWT_SECRET = process.env.JWT_SECRET || 'recursos-hidricos-sde-secret';
+
+// Valida el secreto al arrancar: en producción aborta si falta, es el valor
+// antiguo o es demasiado corto. En desarrollo mantiene un fallback con aviso.
+const JWT_SECRET = getJwtSecret();
+
+function parseTrustProxy(value) {
+  if (value === undefined || value === null || String(value).trim() === '') return 1;
+
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === 'false') return false;
+  if (normalized === 'true') return true;
+
+  const hops = Number(normalized);
+  if (Number.isInteger(hops) && hops >= 0) return hops;
+
+  console.warn(`⚠️  TRUST_PROXY inválido ("${value}"). Se usa 1 (un proxy).`);
+  return 1;
+}
 
 // En producción hay exactamente un proxy delante (nginx del frontend).
 // Sin esto, req.ip sería la IP del contenedor de nginx y express-rate-limit
 // aplicaría el límite globalmente en lugar de por cliente.
-app.set('trust proxy', 1);
+// TRUST_PROXY permite subir a 2 si se agrega otro proxy delante de nginx.
+app.set('trust proxy', parseTrustProxy(process.env.TRUST_PROXY));
 
 // ─── Middlewares ──────────────────────────────────────
 app.use(helmet());
@@ -113,6 +133,11 @@ const upload = multer({
 // ═══════════════════════════════════════════════════════
 
 const ROLES_VALIDOS = ['administrador', 'presidente', 'inspector', 'dpto_construccion', 'dpto_estudios', 'dpto_conservacion'];
+
+// El registro público siempre crea el rol con menos privilegios (inspector:
+// no crea/edita/elimina obras, no elimina archivos, no gestiona usuarios ni
+// auditoría). Cualquier rol enviado en el body se ignora.
+const ROL_REGISTRO_PUBLICO = 'inspector';
 
 // Permisos por rol (espejo de frontend/src/lib/permissions.js)
 const PERMISOS_ROL = {
@@ -270,17 +295,25 @@ app.get('/api/auth/me', authenticateToken, loadUser, (req, res) => {
 });
 
 // Registro público (self-register)
+// Seguridad: el rol enviado por el cliente se ignora por completo. El registro
+// público solo puede crear usuarios con el rol de menor privilegio.
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { nombre, apellido, correo, contrasena, rol } = req.body;
+    const { nombre, apellido, correo, contrasena } = req.body;
 
-    if (!nombre || !apellido || !correo || !contrasena || !rol) {
-      return res.status(400).json({ error: 'Todos los campos son requeridos' });
+    if (!nombre || !apellido || !correo || !contrasena) {
+      return res.status(400).json({ error: 'Nombre, apellido, correo y contraseña son requeridos' });
     }
 
-    if (!ROLES_VALIDOS.includes(rol)) {
-      return res.status(400).json({ error: `Rol inválido. Debe ser: ${ROLES_VALIDOS.join(', ')}` });
+    if (!/^\S+@\S+\.\S+$/.test(correo)) {
+      return res.status(400).json({ error: 'El correo no es válido' });
     }
+
+    if (String(contrasena).length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const rol = ROL_REGISTRO_PUBLICO;
 
     const [existing] = await pool.query('SELECT id FROM usuarios WHERE correo = ?', [correo]);
     if (existing.length > 0) {
@@ -1153,6 +1186,53 @@ function authorizeGestionUsuarios(req, res, next) {
   next();
 }
 
+// Crear usuario con rol arbitrario (solo administrador autenticado).
+// El registro público (/api/auth/register) no permite elegir rol.
+app.post('/api/usuarios', authenticateToken, loadUser, authorizeGestionUsuarios, async (req, res) => {
+  try {
+    const { nombre, apellido, correo, contrasena, rol } = req.body;
+
+    if (!nombre || !apellido || !correo || !contrasena || !rol) {
+      return res.status(400).json({ error: 'Nombre, apellido, correo, contraseña y rol son requeridos' });
+    }
+
+    if (!ROLES_VALIDOS.includes(rol)) {
+      return res.status(400).json({ error: `Rol inválido. Debe ser: ${ROLES_VALIDOS.join(', ')}` });
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(correo)) {
+      return res.status(400).json({ error: 'El correo no es válido' });
+    }
+
+    if (String(contrasena).length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const [existing] = await pool.query('SELECT id FROM usuarios WHERE correo = ?', [correo]);
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'El correo ya está registrado' });
+    }
+
+    const hashedPassword = await bcrypt.hash(contrasena, 12);
+    const [result] = await pool.query(
+      'INSERT INTO usuarios (nombre, apellido, correo, contrasena, rol) VALUES (?, ?, ?, ?, ?)',
+      [nombre, apellido, correo, hashedPassword, rol]
+    );
+
+    const [user] = await pool.query(
+      'SELECT id, nombre, apellido, correo, rol, activo, created_at FROM usuarios WHERE id = ?',
+      [result.insertId]
+    );
+
+    auditLog(req.userInfo.id, 'CREAR_USUARIO', 'usuario', result.insertId, req.ip, { correo, rol });
+
+    res.status(201).json({ message: 'Usuario creado exitosamente', usuario: user[0] });
+  } catch (err) {
+    console.error('Error creando usuario:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 app.get('/api/usuarios', authenticateToken, loadUser, authorizeGestionUsuarios, async (req, res) => {
   try {
     const { search, rol, page = 1, limit = 50 } = req.query;
@@ -1292,5 +1372,6 @@ app.use((err, _req, res, _next) => {
 app.listen(port, '0.0.0.0', () => {
   console.log(`\n✨ Recursos Hídricos SDE - Backend corriendo en http://localhost:${port}`);
   console.log(`📋 API: http://localhost:${port}/api`);
+  console.log(`🌐 Trust proxy: ${JSON.stringify(app.get('trust proxy'))}`);
   console.log(`🗄️  DB: ${process.env.DB_NAME}\n`);
 });

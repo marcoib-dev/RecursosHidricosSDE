@@ -113,7 +113,25 @@ JWT_EXPIRES_IN=7d
 # Servidor
 PORT=4000
 FRONTEND_URL=http://localhost:3000
+
+# Proxies de confianza (1 = un proxy delante, por ejemplo nginx)
+TRUST_PROXY=1
+
+# Primer administrador (independiente de SEED_DEMO)
+# La contraseña debe tener al menos 12 caracteres.
+ADMIN_EMAIL=admin@ejemplo.invalid
+ADMIN_PASSWORD=una_password_de_al_menos_12_caracteres
+ADMIN_NOMBRE=Administrador General
 ```
+
+> `ADMIN_EMAIL` y `ADMIN_PASSWORD` solo se usan si la base **no tiene ningún
+> administrador**. Nunca se sobrescriben usuarios existentes ni se resetean
+> contraseñas. Si falta alguna variable o la contraseña es corta, el backend
+> avisa en los logs y no crea nada.
+
+> El registro público (`/register`) crea siempre usuarios con rol **Inspector**
+> e ignora cualquier rol enviado en la petición. Solo un administrador
+> autenticado puede crear usuarios con otros roles desde **Usuarios**.
 
 ## Ejecucion
 
@@ -175,6 +193,11 @@ Editar `.env.produccion` y completar como mínimo:
   `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
   o `openssl rand -hex 64`.
 - `FRONTEND_URL`: dominio o URL pública (por ejemplo `https://recursos-hidricos.midominio.gob.ar`).
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD` y `ADMIN_NOMBRE`: primer administrador. La
+  contraseña debe tener **al menos 12 caracteres**. Son independientes de
+  `SEED_DEMO` y nunca modifican usuarios existentes.
+- `TRUST_PROXY`: `1` por defecto (nginx del frontend). Subirlo a `2` si se
+  agrega otro proxy delante de nginx (por ejemplo, el del servidor del ITSE).
 - `HTTP_PORT`: `80` por defecto; usar `8080` si el servidor ya tiene algo en el 80.
 
 `.env.produccion` está en `.gitignore`: **nunca** se commitea.
@@ -189,9 +212,34 @@ La aplicación queda disponible en `http://IP_DEL_SERVIDOR:HTTP_PORT`.
 
 Solo se publica el puerto del frontend. MySQL y el backend quedan en la red interna de Compose; nginx sirve la SPA y reenvía `/api` y `/uploads` al backend. Como el frontend usa rutas relativas, el mismo build funciona con cualquier dominio, subdominio o puerto sin recompilar.
 
-### 3. Cargar datos de ejemplo (opcional)
+### 3. Crear el primer administrador
+
+Con `SEED_DEMO=false` la base queda vacía, pero el backend crea el primer
+administrador al arrancar si están definidos `ADMIN_EMAIL` y `ADMIN_PASSWORD`
+(contraseña de 12 caracteres o más). Es idempotente: si ya existe cualquier
+usuario con rol `administrador`, no crea ni modifica nada.
+
+Revisar los logs del backend:
+
+```bash
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml logs backend | grep -i administrador
+```
+
+Si `ADMIN_PASSWORD` es corta o falta alguna variable, aparece una advertencia
+clara (sin mostrar la contraseña) y no se crea ningún usuario. También se puede
+ejecutar manualmente:
+
+```bash
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml exec backend npm run db:admin
+```
+
+### 4. Cargar datos de ejemplo (opcional)
 
 Para una demo o primer ingreso, poner `SEED_DEMO=true` en `.env.produccion` antes del primer arranque y ejecutar el mismo comando. El seed es idempotente: no duplica usuarios ni obras en reinicios.
+
+> ⚠️ **Los usuarios demo tienen contraseñas públicas y conocidas.** Cambiarlas
+> desde la aplicación después del primer ingreso. En una instalación real usar
+> `SEED_DEMO=false` y el administrador definido con `ADMIN_*`.
 
 También se puede ejecutar manualmente:
 
@@ -203,7 +251,7 @@ Credenciales de prueba: `admin@recursoshidricos.gob.ar / admin123` (y el resto d
 
 > **Importante:** después del primer ingreso, cambiar las contraseñas de todos los usuarios de prueba desde la aplicación.
 
-### 4. Ver logs
+### 5. Ver logs
 
 ```bash
 # Todos los servicios
@@ -218,7 +266,7 @@ docker compose --env-file .env.produccion -f docker-compose.prod.yaml logs -f db
 docker compose --env-file .env.produccion -f docker-compose.prod.yaml ps
 ```
 
-### 5. Actualizar tras un cambio en el repositorio
+### 6. Actualizar tras un cambio en el repositorio
 
 ```bash
 git pull
@@ -227,7 +275,7 @@ docker compose --env-file .env.produccion -f docker-compose.prod.yaml up -d --bu
 
 Docker reconstruye las imágenes, ejecuta el esquema idempotente y reinicia solo lo necesario. Los datos de MySQL y los archivos subidos se conservan en volúmenes.
 
-### 6. Detener
+### 7. Detener
 
 ```bash
 docker compose --env-file .env.produccion -f docker-compose.prod.yaml down

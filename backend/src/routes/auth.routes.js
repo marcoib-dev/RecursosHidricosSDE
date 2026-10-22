@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import jwtConfig from '../config/jwt.cjs';
 import { query } from '../database/connection.js';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -91,7 +92,7 @@ router.post(
 
       const token = jwt.sign(
         { userId: user.id, rol: user.rol },
-        process.env.JWT_SECRET,
+        jwtConfig.getJwtSecret(),
         { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
       );
 

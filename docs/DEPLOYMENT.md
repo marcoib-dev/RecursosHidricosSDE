@@ -170,7 +170,7 @@ frontend (nginx)
 - Solo el servicio `frontend` publica un puerto en el host.
 - `backend` y `db` solo son accesibles dentro de la red de Compose.
 - El frontend usa rutas relativas (`/api`), así que no hay que recompilar si cambia el dominio, el subdominio o el puerto.
-- El backend confía en un único proxy (`trust proxy = 1`), por lo que `req.ip` y el rate limit funcionan con la IP real del cliente detrás de nginx.
+- El backend confía en un proxy por defecto (`TRUST_PROXY=1`), por lo que `req.ip` y el rate limit funcionan con la IP real del cliente detrás de nginx. Si se agrega otro proxy delante de nginx (por ejemplo, el del servidor del ITSE), usar `TRUST_PROXY=2`.
 
 ### 1. Clonar y crear el archivo de entorno
 
@@ -191,11 +191,19 @@ Completar `.env.produccion`:
 | `DB_USER` | Sí | Usuario de la aplicación. La imagen de MySQL lo crea la primera vez. No puede ser `root`. |
 | `DB_PASSWORD` | Sí | Contraseña del usuario de la aplicación. |
 | `DB_HOST` / `DB_PORT` | Sí | `db` / `3306` dentro de Compose. |
-| `JWT_SECRET` | Sí | Clave de firma de tokens. Generar una nueva (ver abajo). |
+| `JWT_SECRET` | Sí | Clave de firma de tokens. Debe tener **≥32 caracteres**, no puede ser el valor por defecto antiguo y es obligatoria en producción (ver abajo). |
 | `JWT_EXPIRES_IN` | No | Duración del token (`7d` por defecto). |
 | `FRONTEND_URL` | Sí | URL pública, usada por CORS (ej. `https://recursos-hidricos.midominio.gob.ar`). |
+| `TRUST_PROXY` | No | Número de proxies delante del backend (`1` por defecto). Acepta `false` y `0`. Subir a `2` si hay otro proxy delante de nginx. |
+| `ADMIN_EMAIL` | No* | Correo del primer administrador. Necesario si la base no tiene ningún administrador. |
+| `ADMIN_PASSWORD` | No* | Contraseña del primer administrador. **Mínimo 12 caracteres**. |
+| `ADMIN_NOMBRE` | No | Nombre del primer administrador (`Administrador` por defecto). |
 | `HTTP_PORT` | No | Puerto publicado en el host (`80` por defecto). |
-| `SEED_DEMO` | No | `true` carga usuarios/obras de ejemplo; `false` deja solo el esquema. |
+| `SEED_DEMO` | No | `true` carga usuarios/obras de ejemplo; `false` deja solo el esquema. Los usuarios demo tienen contraseñas públicas. |
+
+\* `ADMIN_EMAIL` y `ADMIN_PASSWORD` son opcionales solo si ya existe un
+administrador o si se usa `SEED_DEMO=true`. En una instalación real se
+recomienda `SEED_DEMO=false` + `ADMIN_*`.
 
 Generar el secreto JWT:
 
@@ -223,7 +231,39 @@ curl http://localhost:${HTTP_PORT:-80}/api/health
 
 La respuesta esperada del health check es `{"status":"ok","database":"connected",...}`.
 
-### 3. Inicialización de la base de datos
+### 3. Primer administrador
+
+El arranque del backend ejecuta `backend/src/database/create-admin.mjs`
+**después** de `init.mjs` y **antes** del seed. Es independiente de
+`SEED_DEMO`:
+
+- Si ya existe cualquier usuario con rol `administrador`, no hace nada.
+- Si no existe y `ADMIN_EMAIL` + `ADMIN_PASSWORD` están definidos, crea el
+  usuario con la contraseña hasheada con bcrypt.
+- Exige una contraseña de al menos 12 caracteres.
+- Si falta alguna variable, el correo es inválido o la contraseña es corta,
+  muestra una advertencia clara (sin imprimir la contraseña) y no crea nada.
+- Nunca sobrescribe un usuario existente ni resetea contraseñas, aunque el
+  correo coincida con `ADMIN_EMAIL`.
+
+Verificar en los logs:
+
+```bash
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml logs backend | grep -i administrador
+```
+
+También se puede ejecutar manualmente (idempotente):
+
+```bash
+docker compose --env-file .env.produccion -f docker-compose.prod.yaml exec backend npm run db:admin
+```
+
+> El registro público (`POST /api/auth/register`) siempre crea usuarios con
+> rol **Inspector** e ignora el campo `rol` del body. Solo un administrador
+> autenticado puede crear usuarios con otros roles (`POST /api/usuarios`) o
+> cambiar el rol de un usuario existente (`PATCH /api/usuarios/:id/role`).
+
+### 4. Inicialización de la base de datos
 
 **Decisión:** el esquema lo crea `backend/src/database/init.mjs` desde el entrypoint del backend, **no** se monta `backend/database.sql` en `/docker-entrypoint-initdb.d`.
 
@@ -236,7 +276,7 @@ Motivos:
 
 > Limitación: `init.mjs` crea tablas faltantes, pero no es un sistema de migraciones. Si en el futuro cambia una columna existente, habrá que agregar una migración explícita.
 
-### 4. Datos de ejemplo (opcional)
+### 5. Datos de ejemplo (opcional)
 
 Opción A — antes del primer arranque: poner `SEED_DEMO=true` en `.env.produccion` y ejecutar `up -d --build`.
 
@@ -254,11 +294,15 @@ El seed es idempotente:
 
 Credenciales de prueba: `admin@recursoshidricos.gob.ar / admin123`, `presidente@... / presidente123`, `inspector@... / inspector123`, departamentos `/ depto123`.
 
-> **Cambiar todas las contraseñas de prueba después del primer ingreso.**
+> ⚠️ **Los usuarios demo tienen contraseñas públicas y conocidas.** El
+> entrypoint y el seed imprimen esta advertencia cuando `SEED_DEMO=true`.
+> Cambiar todas las contraseñas de prueba después del primer ingreso. En una
+> instalación real usar `SEED_DEMO=false` y el administrador creado con
+> `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
 Para desactivar el seed en arranques posteriores, volver a `SEED_DEMO=false` y aplicar con `up -d`.
 
-### 5. Logs y estado
+### 6. Logs y estado
 
 ```bash
 # Seguir todos los logs
@@ -273,7 +317,7 @@ docker compose --env-file .env.produccion -f docker-compose.prod.yaml ps
 docker inspect --format '{{.State.Health.Status}}' $(docker compose --env-file .env.produccion -f docker-compose.prod.yaml ps -q backend)
 ```
 
-### 6. Actualizar el despliegue
+### 7. Actualizar el despliegue
 
 ```bash
 git pull
@@ -285,7 +329,7 @@ docker compose --env-file .env.produccion -f docker-compose.prod.yaml up -d --bu
 - Los volúmenes `mysql_data` y `uploads_data` se conservan.
 - Si cambió `nginx.conf`, el contenedor de frontend se recrea con la nueva configuración.
 
-### 7. Detener o eliminar
+### 8. Detener o eliminar
 
 ```bash
 # Detener conservando datos
@@ -297,7 +341,7 @@ docker compose --env-file .env.produccion -f docker-compose.prod.yaml down -v
 
 > ⚠️ **`down -v` borra los volúmenes `mysql_data` y `uploads_data`.** No existe recuperación sin un backup previo.
 
-### 8. Backups y restauración
+### 9. Backups y restauración
 
 Backup de la base:
 
@@ -324,7 +368,7 @@ docker compose --env-file .env.produccion -f docker-compose.prod.yaml exec -T db
   sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"'
 ```
 
-### 9. Resolución de problemas
+### 10. Resolución de problemas
 
 | Síntoma | Causa probable / solución |
 |---|---|
@@ -336,10 +380,12 @@ docker compose --env-file .env.produccion -f docker-compose.prod.yaml exec -T db
 | Error de permisos en `uploads/` con bind mount | El contenedor corre como usuario `node` (UID 1000): `sudo chown -R 1000:1000 ./uploads`. Con volúmenes nombrados no hace falta. |
 | Cambios en `.env.produccion` no se aplican | Ejecutar `up -d` (Compose recrea si cambian las variables). |
 
-### 10. Seguridad
+### 11. Seguridad
 
-- [ ] Contraseñas de MySQL y `JWT_SECRET` nuevas y únicas por instalación.
+- [ ] Contraseñas de MySQL y `JWT_SECRET` nuevas y únicas por instalación. `JWT_SECRET` debe tener ≥32 caracteres.
 - [ ] `SEED_DEMO=false` en producción real.
+- [ ] Definir `ADMIN_EMAIL` / `ADMIN_PASSWORD` (≥12 caracteres) para el primer administrador. Verificar que no quede ningún usuario con contraseña demo.
+- [ ] Revisar `TRUST_PROXY` si hay más de un proxy delante del backend.
 - [ ] Cambiar contraseñas de usuarios de prueba tras el primer ingreso.
 - [ ] Publicar solo `HTTP_PORT`; no exponer 3306 ni 4000.
 - [ ] Configurar HTTPS con un reverse proxy delante (Caddy, Traefik, nginx del host) apuntando a `HTTP_PORT`.

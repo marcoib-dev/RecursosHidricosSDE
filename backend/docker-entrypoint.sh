@@ -17,10 +17,19 @@ until node src/database/init.mjs; do
   sleep 3
 done
 
+# ─── Primer administrador (independiente de SEED_DEMO) ───
+# Solo crea un administrador si no existe ninguno. Nunca modifica usuarios
+# existentes ni resetea contraseñas. Si faltan variables o la contraseña es
+# corta, avisa y continúa sin crear nada.
+echo "👤 Verificando administrador inicial..."
+node src/database/create-admin.mjs
+
 # ─── Datos de ejemplo (opcional) ────────────────────
 # seed.mjs es idempotente: verifica cada obra por nombre y no duplica
 # registros aunque el contenedor se reinicie con SEED_DEMO=true.
 if [ "${SEED_DEMO:-false}" = "true" ]; then
+  echo "⚠️  SEED_DEMO=true: los usuarios demo usan contraseñas PÚBLICAS y conocidas."
+  echo "⚠️  Cámbielas desde la aplicación después del primer ingreso."
   echo "🌱 SEED_DEMO=true: cargando datos de ejemplo..."
   node src/database/seed.mjs
 fi
